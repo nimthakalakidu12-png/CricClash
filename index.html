@@ -9,6 +9,7 @@
 <title>CRIC CLASH v30 • SUPREME LIQUID BROADCAST EDITION</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
 :root, body.theme-oled {
@@ -304,7 +305,27 @@ select option { background: #14141d; color: #fff; }
 .qr-frame img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
 .tone-pill { padding: 3px 8px; border-radius: 99px; font-size: 7px; font-weight: 900; background: var(--gold); color: #111; border: 1px solid var(--gold); display: inline-block; }
 
-/* Full-Screen Live Spectator TV Broadcast Overlay (For shared links without app) */
+/* Official Google Sign-In Button Styling */
+.google-auth-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #111111;
+  font-weight: 900;
+  font-size: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+}
+.google-auth-btn:active { transform: scale(0.95); }
+
+/* Full-Screen Live Spectator TV Broadcast Overlay */
 #fullSpectatorBroadcastScreen {
   position: fixed; inset: 0; z-index: 99995;
   background: radial-gradient(circle at 50% 0%, #10182f 0%, #040407 80%);
@@ -317,7 +338,7 @@ select option { background: #14141d; color: #fff; }
 <div id="impactRippleOverlay"></div>
 <div class="ambient-bg"><div class="orb o1" id="bgOrb1"></div><div class="orb o2" id="bgOrb2"></div><div class="orb o3" id="bgOrb3"></div></div>
 
-<!-- Full-Screen Live Spectator TV Broadcast Screen (Auto-Opens When Someone Clicks Shared Link) -->
+<!-- Full-Screen Live Spectator TV Broadcast Screen -->
 <div id="fullSpectatorBroadcastScreen">
   <div style="max-width:440px;margin:0 auto;padding-bottom:40px">
     <div class="glass hero holo-card" style="padding:14px;margin-bottom:12px">
@@ -829,19 +850,59 @@ select option { background: #14141d; color: #fff; }
     <div class="settings-item" style="cursor:pointer" onclick="openAboutApp()"><div><div style="font-weight:800;font-size:12px">ℹ️ About v30 Supreme Edition</div><div style="font-size:9px;color:var(--muted)">Tap to view full capabilities</div></div><div style="font-size:16px">→</div></div>
   </div>
 
+  <!-- GOOGLE AUTH & CLOUD BACKUP CENTER -->
   <div class="glass" style="border:2px solid #4285f4;padding:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:36px;height:36px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center">📧</div><div style="flex:1"><div style="font-size:12px;font-weight:900">CLOUD & LOCAL BACKUP CENTER</div><div id="gmailStatus" style="font-size:9px;color:var(--muted)">Not logged in</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div id="googleUserAvatarBox" style="width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #4285f4;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.14C3.15 21.32 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.18C.43 8.15 0 9.88 0 11.76s.43 3.61 1.18 5.14l4.09-2.66z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.62l4.09 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:900">GOOGLE AUTH & CLOUD BACKUP</div>
+        <div id="gmailStatus" style="font-size:9px;color:var(--muted)">Not signed in</div>
+      </div>
+    </div>
+
     <div id="gmailLoginArea">
-      <div style="display:grid;grid-template-columns:1fr;gap:8px">
-        <input type="email" id="gmailInput" placeholder="your@gmail.com">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <button class="btn" style="background:#4285f4;color:#fff;padding:10px" onclick="gmailBridgeLogin(true)">☁️ LOGIN & RESTORE OLD DATA</button>
-          <button class="btn gold" style="padding:10px" onclick="gmailBridgeLogin(false)">🔗 LOGIN & BACKUP CURRENT</button>
+      <button class="google-auth-btn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.14C3.15 21.32 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.18C.43 8.15 0 9.88 0 11.76s.43 3.61 1.18 5.14l4.09-2.66z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.62l4.09 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+        Sign in with Google
+      </button>
+
+      <!-- Manual Email Fallback -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+        <div style="font-size:8px;font-weight:800;color:var(--muted);margin-bottom:5px;text-align:center">OR DIRECT EMAIL SYNC (FALLBACK)</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:5px">
+          <input type="email" id="gmailInput" placeholder="your@gmail.com" style="font-size:10px;padding:8px 10px">
+          <button class="btn light" style="padding:8px 10px;font-size:9px" onclick="gmailBridgeLogin(true)">🔄 RESTORE</button>
+          <button class="btn gold" style="padding:8px 10px;font-size:9px" onclick="gmailBridgeLogin(false)">☁️ SAVE</button>
         </div>
       </div>
     </div>
-    <div id="gmailLoggedArea" style="display:none"><div style="background:rgba(66,133,244,0.15);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center"><div><div id="loggedGmail" style="font-size:11px;font-weight:900"></div><div style="font-size:8px;color:var(--muted)">☁️ Firebase Real-Time Sync Active</div></div><button class="btn red" style="padding:6px 10px;font-size:8px" onclick="gmailLogout()">LOGOUT</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn gold" onclick="cloudBackup()">☁️ BACKUP NOW</button><button class="btn dark" style="border-color:var(--cyan);color:var(--cyan)" onclick="cloudRestore()">🔄 RESTORE OLD DATA</button></div><div id="cloudLastBackup" style="font-size:8px;color:var(--muted);text-align:center;margin-top:6px"></div></div>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)"><div style="font-size:10px;font-weight:900;margin-bottom:6px">💾 LOCAL JSON FILE BACKUP</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn light" onclick="exportData()">📤 EXPORT JSON</button><button class="btn light" onclick="document.getElementById('importFile').click()">📥 IMPORT JSON</button><input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)"></div></div>
+
+    <div id="gmailLoggedArea" style="display:none">
+      <div style="background:rgba(66,133,244,0.15);padding:10px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(66,133,244,0.35)">
+        <div>
+          <div id="loggedGmailName" style="font-size:12px;font-weight:900;color:var(--gold)"></div>
+          <div id="loggedGmail" style="font-size:10px;font-weight:700;color:#fff"></div>
+          <div style="font-size:8px;color:#00e676;font-weight:800;margin-top:2px">● Google Cloud Real-Time Sync Active</div>
+        </div>
+        <button class="btn red" style="padding:6px 10px;font-size:8px" onclick="gmailLogout()">SIGN OUT</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <button class="btn gold" style="padding:11px" onclick="cloudBackup()">☁️ BACKUP NOW</button>
+        <button class="btn dark" style="padding:11px;border-color:var(--cyan);color:var(--cyan)" onclick="cloudRestore(false)">🔄 RESTORE DATA</button>
+      </div>
+      <div id="cloudLastBackup" style="font-size:8px;color:var(--muted);text-align:center;margin-top:6px"></div>
+    </div>
+
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
+      <div style="font-size:10px;font-weight:900;margin-bottom:6px">💾 LOCAL JSON FILE BACKUP</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn light" onclick="exportData()">📤 EXPORT JSON</button>
+        <button class="btn light" onclick="document.getElementById('importFile').click()">📥 IMPORT JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+      </div>
+    </div>
   </div>
 
   <div class="glass" style="border:2px solid #ff3b30;padding:14px">
@@ -997,7 +1058,7 @@ select option { background: #14141d; color: #fff; }
 <div id="ballEditModal" class="modal"><div class="modal-content" style="padding:16px"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:900">🎬 BALL TIMELINE & UNDO</div><button class="btn light" onclick="closeBallEdit()">✕</button></div><div id="ballEditList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto"></div></div></div>
 <div id="liveGraphsModal" class="modal" onclick="closeLiveGraphsModal()"><div class="modal-content" style="padding:16px;padding-top:46px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeLiveGraphsModal()">✕</button><div style="font-size:15px;font-weight:900;text-align:center">📈 LIVE WORM & EVENT MARKERS</div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:8px">🟡 1st Inn vs 🔵 2nd Inn • 🔴 Wickets • ⚡ 12+ Big Over</div><div style="font-size:10px;font-weight:900;margin-top:6px;color:var(--gold)">WORM COMPARISON CHART</div><canvas id="liveWormCanvas" class="chart-canvas" width="360" height="165"></canvas><div style="font-size:10px;font-weight:900;margin-top:12px;color:var(--cyan)">MANHATTAN OVER-BY-OVER RUNS</div><canvas id="liveRunBarCanvas" class="chart-canvas" width="360" height="150"></canvas><button class="btn gold" style="width:100%;margin-top:12px;padding:11px" onclick="closeLiveGraphsModal()">BACK TO LIVE MATCH</button></div></div>
 <div id="certificateModal" class="modal" style="z-index:20000"><div class="modal-content" style="padding:0;overflow:hidden"><button class="close-x" onclick="closeCertificate()">✕</button><div style="padding:16px;padding-top:50px"><div style="font-size:16px;font-weight:900;text-align:center">📜 MATCH CERTIFICATE & MVP STICKER</div><canvas id="certificateCanvas" width="600" height="420"></canvas><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px"><button class="btn gold" style="padding:11px" onclick="downloadCertificate()">📥 CERT PNG</button><button class="btn light" style="padding:11px" onclick="downloadMVPSticker()">🎖️ MVP BADGE</button><button class="btn dark" style="padding:11px;background:#25D366;color:#111;border:none" onclick="shareCertificateWhatsApp()">📲 WHATSAPP</button></div></div></div></div>
-<div id="aboutModal" class="modal" style="z-index:20000"><div class="modal-content" style="padding:0" onclick="event.stopPropagation()"><button class="close-x" onclick="closeAboutApp()">✕</button><div style="padding:20px;padding-top:50px"><div style="text-align:center"><div style="width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:20px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:32px">🏏</div><h2 style="margin:12px 0 4px;font-size:20px">CRIC CLASH v30 SUPREME</h2><p style="font-size:10px;color:var(--muted)">NEXT-GEN LIQUID GLASS UI • INTERACTIVE AVATAR SQUAD CARDS • ZERO-LOSS AUTO RECOVERY • LIVE LINK + QR SPECTATOR • SMART MATCH DELETE & CAREER RECALC • 100% BUG FREE</p></div><button class="btn gold" style="width:100%;padding:12px;margin-top:12px" onclick="closeAboutApp()">CLOSE</button></div></div></div>
+<div id="aboutModal" class="modal" style="z-index:20000"><div class="modal-content" style="padding:0" onclick="event.stopPropagation()"><button class="close-x" onclick="closeAboutApp()">✕</button><div style="padding:20px;padding-top:50px"><div style="text-align:center"><div style="width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:20px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:32px">🏏</div><h2 style="margin:12px 0 4px;font-size:20px">CRIC CLASH v30 SUPREME</h2><p style="font-size:10px;color:var(--muted)">NEXT-GEN LIQUID GLASS UI • GOOGLE AUTH CLOUD BACKUP • ZERO-LOSS AUTO RECOVERY • LIVE LINK + QR SPECTATOR TV • SMART MATCH DELETE & CAREER RECALC • 100% BUG FREE</p></div><button class="btn gold" style="width:100%;padding:12px;margin-top:12px" onclick="closeAboutApp()">CLOSE</button></div></div></div>
 <div id="superOverModal" class="modal" style="background:rgba(0,0,0,0.92); z-index:25000"><div style="text-align:center;padding:20px"><div style="font-size:64px">⚡</div><div style="font-size:38px;font-weight:900;color:#fff">MATCH TIED!</div><div style="color:var(--gold);font-size:16px;font-weight:800;margin-top:10px">AUTO-LAUNCHING SUPER OVER!</div></div></div>
 <div id="milestoneModal" class="modal" style="background:rgba(0,0,0,0.92); z-index:25000"><div style="text-align:center;padding:20px" id="milestoneContent"></div></div>
 <canvas id="scorecardExportCanvas" width="700" height="920" style="display:none"></canvas>
@@ -1007,6 +1068,9 @@ select option { background: #14141d; color: #fff; }
 const firebaseConfig = { apiKey: "AIzaSyB0vDSruAblivdCLm8o3s48AFuckFY_Oec", authDomain: "cric-clash.firebaseapp.com", databaseURL: "https://cric-clash-default-rtdb.firebaseio.com", projectId: "cric-clash", storageBucket: "cric-clash.firebasestorage.app", messagingSenderId: "26915012588", appId: "1:26915012588:web:5b6c7e85ef018881e9cac9" };
 try { firebase.initializeApp(firebaseConfig); } catch(e){}
 const database = (typeof firebase !== 'undefined' && firebase.database) ? firebase.database() : null;
+const auth = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null;
+const googleProvider = (typeof firebase !== 'undefined' && firebase.auth) ? new firebase.auth.GoogleAuthProvider() : null;
+if(googleProvider) { try { googleProvider.setCustomParameters({ prompt: 'select_account' }); } catch(e){} }
 
 var settings={appTheme:'oled',voice:true,sfx:true,autoSave:true,commTone:'hype'};
 var APP_THEMES=['oled','ipl','turf','cyber','frost'];
@@ -1051,6 +1115,8 @@ var matchMode='1v1', teamWicketRule='all_out', teamAName='Team A', teamBName='Te
 var ffaPlayers=[], ffaCurrentBatterIdx=-1, ffaPickedBatterTemp=-1, ffaTurnNumber=0;
 var activeLeagueId=null,activeFixtureIdx=null,activeIsFinal=false,activeIsSF=false,openedLeagueId=null,editIndex=-1,editTempAvatar=null,editSelectedTheme='#f5c542',ballCountAutoSave=0,currentWicketType='', pendingLeagueMatch=null;
 var currentGmailUser=localStorage.getItem('cric_gmail_user')||null;
+var currentGoogleName=localStorage.getItem('cric_google_name')||'';
+var currentGooglePhoto=localStorage.getItem('cric_google_photo')||'';
 var lastCertificateData=null, currentSummaryReportIdx=0, overRuns=0, overWktsCount=0, undoStack=[], preSuperOverStats=null, commentaryLog=[], highlightFilter='all';
 var hostRoomCode = localStorage.getItem('cric_host_room') || null;
 var activeSpectatorRoomRef = null;
@@ -1229,7 +1295,7 @@ function parseVoiceCommand(cmd) {
 }
 
 /* ========================================================================= */
-/* 📡 FIX #3: ADVANCED BALL-BY-BALL LIVE SPECTATOR TV STREAM (NO APP NEEDED) */
+/* 📡 ADVANCED BALL-BY-BALL LIVE SPECTATOR TV STREAM (NO APP NEEDED)         */
 /* ========================================================================= */
 function openSpectatorHub() {
     if(hostRoomCode) renderHostQRAndLink();
@@ -1611,7 +1677,7 @@ function loadSettings(){try{var s=localStorage.getItem('cric_clash_settings_v10'
 function saveSettings(){localStorage.setItem('cric_clash_settings_v10',JSON.stringify(settings));}
 function updateToggles(){var vt=document.getElementById('voiceToggle');if(vt)vt.classList.toggle('on',settings.voice);var st=document.getElementById('sfxToggle');if(st)st.classList.toggle('on',settings.sfx);var ast=document.getElementById('autoSaveToggle');if(ast)ast.classList.toggle('on',settings.autoSave);}
 function toggleSetting(k){settings[k]=!settings[k];updateToggles();saveSettings();showToast(k.toUpperCase()+' '+(settings[k]?'ON':'OFF'));}
-function showToast(m){var c=document.getElementById('toastContainer');var t=document.createElement('div');t.className='toast';t.innerHTML=m;c.appendChild(t);setTimeout(function(){t.remove();},2200);}
+function showToast(m){var c=document.getElementById('toastContainer');var t=document.createElement('div');t.className='toast';t.innerHTML=m;c.appendChild(t);setTimeout(function(){t.remove();},2400);}
 
 function setHighlightFilter(f) {
     highlightFilter = f;
@@ -1709,7 +1775,7 @@ function updatePlayerCareer(info, winnerName, isDraw) {
 }
 
 /* ========================================================================= */
-/* 🗑️ FIX #2: DELETE MATCH FROM HISTORY & RECALCULATE ALL CAREER/RIVALRIES   */
+/* 🗑️ DELETE MATCH FROM HISTORY & RECALCULATE ALL CAREER/RIVALRIES           */
 /* ========================================================================= */
 function recalculateAllCareersAndRivalriesFromHistory() {
     players.forEach(function(pl) {
@@ -3025,13 +3091,74 @@ function closeOverSummary(){document.getElementById('overSummaryModal').classLis
 function clearHistory(){if(confirm('Clear all match history? (This will also reset all player career stats)')){matchHistory=[];recalculateAllCareersAndRivalriesFromHistory();saveAll();renderAll();}}
 
 /* ========================================================================= */
-/* ☁️ FIX #1: SMART GMAIL LOGIN & CLOUD RESTORE (NEVER OVERWRITES OLD DATA!) */
+/* 🔐 GOOGLE AUTHENTICATION (SIGN IN WITH GOOGLE) + CLOUD BACKUP & RESTORE   */
 /* ========================================================================= */
+function loginWithGoogle() {
+    if(!auth || !googleProvider) {
+        showToast('⚠️ Firebase Auth unavailable! Use Direct Email Sync below.');
+        return;
+    }
+    showToast('🔐 Opening Google Sign-In...');
+    auth.signInWithPopup(googleProvider).then(function(result) {
+        handleGoogleUserSignedIn(result.user, true);
+    }).catch(function(error) {
+        if(error && (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment')) {
+            auth.signInWithRedirect(googleProvider);
+        } else if(error && error.code === 'auth/unauthorized-domain') {
+            showToast('⚠️ Add ' + window.location.hostname + ' in Firebase Auth → Authorized domains!');
+        } else {
+            showToast('⚠️ Google Login: ' + (error ? error.message : 'Cancelled'));
+        }
+    });
+}
+
+function handleGoogleUserSignedIn(user, triggerRestore) {
+    if(!user || !user.email) return;
+    currentGmailUser = user.email.trim().toLowerCase();
+    currentGoogleName = user.displayName || '';
+    currentGooglePhoto = user.photoURL || '';
+    localStorage.setItem('cric_gmail_user', currentGmailUser);
+    localStorage.setItem('cric_google_name', currentGoogleName);
+    localStorage.setItem('cric_google_photo', currentGooglePhoto);
+    updateGmailUI();
+    showToast('🎉 Signed in as ' + (currentGoogleName || currentGmailUser));
+    if(triggerRestore) {
+        cloudRestore(true);
+    }
+}
+
+/* Listen for Redirect Sign-In Result & Persistent Auth State */
+if(auth) {
+    auth.getRedirectResult().then(function(result) {
+        if(result && result.user) {
+            handleGoogleUserSignedIn(result.user, true);
+        }
+    }).catch(function(){});
+
+    auth.onAuthStateChanged(function(user) {
+        if(user && user.email) {
+            var isFirstSession = !currentGmailUser;
+            currentGmailUser = user.email.trim().toLowerCase();
+            currentGoogleName = user.displayName || '';
+            currentGooglePhoto = user.photoURL || '';
+            localStorage.setItem('cric_gmail_user', currentGmailUser);
+            localStorage.setItem('cric_google_name', currentGoogleName);
+            localStorage.setItem('cric_google_photo', currentGooglePhoto);
+            updateGmailUI();
+            if(isFirstSession) cloudRestore(true);
+        }
+    });
+}
+
 function gmailBridgeLogin(shouldRestoreFirst){
     var email=document.getElementById('gmailInput').value.trim();
     if(!email){showToast('Enter your Email address!');return;}
-    currentGmailUser=email;
-    localStorage.setItem('cric_gmail_user',email);
+    currentGmailUser=email.toLowerCase();
+    currentGoogleName='';
+    currentGooglePhoto='';
+    localStorage.setItem('cric_gmail_user',currentGmailUser);
+    localStorage.removeItem('cric_google_name');
+    localStorage.removeItem('cric_google_photo');
     updateGmailUI();
     if(shouldRestoreFirst !== false) {
         cloudRestore(true);
@@ -3039,8 +3166,48 @@ function gmailBridgeLogin(shouldRestoreFirst){
         cloudBackup();
     }
 }
-function gmailLogout(){currentGmailUser=null;localStorage.removeItem('cric_gmail_user');updateGmailUI();}
-function updateGmailUI(){var status=document.getElementById('gmailStatus'),loginArea=document.getElementById('gmailLoginArea'),loggedArea=document.getElementById('gmailLoggedArea'),lgm=document.getElementById('loggedGmail');if(currentGmailUser){if(status)status.innerText='Logged in: '+currentGmailUser;if(lgm)lgm.innerText=currentGmailUser;if(loginArea)loginArea.style.display='none';if(loggedArea)loggedArea.style.display='block';}else{if(status)status.innerText='Not logged in';if(loginArea)loginArea.style.display='block';if(loggedArea)loggedArea.style.display='none';}}
+
+function gmailLogout(){
+    if(auth && auth.currentUser) {
+        auth.signOut().catch(function(){});
+    }
+    currentGmailUser=null;
+    currentGoogleName='';
+    currentGooglePhoto='';
+    localStorage.removeItem('cric_gmail_user');
+    localStorage.removeItem('cric_google_name');
+    localStorage.removeItem('cric_google_photo');
+    updateGmailUI();
+    showToast('🔒 Signed Out!');
+}
+
+function updateGmailUI(){
+    var status=document.getElementById('gmailStatus'),
+        loginArea=document.getElementById('gmailLoginArea'),
+        loggedArea=document.getElementById('gmailLoggedArea'),
+        lgm=document.getElementById('loggedGmail'),
+        lgmName=document.getElementById('loggedGmailName'),
+        avBox=document.getElementById('googleUserAvatarBox');
+
+    if(currentGmailUser){
+        if(status)status.innerText='Signed in: '+(currentGoogleName ? currentGoogleName + ' ('+currentGmailUser+')' : currentGmailUser);
+        if(lgmName)lgmName.innerText=currentGoogleName || 'Google Cloud Account';
+        if(lgm)lgm.innerText=currentGmailUser;
+        if(avBox && currentGooglePhoto){
+            avBox.innerHTML=`<img src="${esc(currentGooglePhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        }
+        if(loginArea)loginArea.style.display='none';
+        if(loggedArea)loggedArea.style.display='block';
+    }else{
+        if(status)status.innerText='Not signed in';
+        if(avBox){
+            avBox.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.14C3.15 21.32 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.18C.43 8.15 0 9.88 0 11.76s.43 3.61 1.18 5.14l4.09-2.66z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.62l4.09 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>`;
+        }
+        if(loginArea)loginArea.style.display='block';
+        if(loggedArea)loggedArea.style.display='none';
+    }
+}
+
 function exportData(){var blob=new Blob([JSON.stringify({players:players,history:matchHistory,leagues:leagues,rivalries:rivalries})],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cric_clash_v30_backup.json';a.click();}
 function importData(input){var file=input.files[0];if(!file)return;var r=new FileReader();r.onload=function(e){try{var d=JSON.parse(e.target.result);if(d.players)players=d.players;if(d.history)matchHistory=d.history;if(d.leagues)leagues=d.leagues;if(d.rivalries)rivalries=d.rivalries;saveAll();renderAll();showToast('Imported! ✅');}catch(err){showToast('Invalid JSON');}};r.readAsText(file);}
 
@@ -3079,7 +3246,7 @@ function openAboutApp(){document.getElementById('aboutModal').classList.add('sho
 function closeAboutApp(){document.getElementById('aboutModal').classList.remove('show');}
 
 function cloudBackup(){
-    if(!currentGmailUser||!database){showToast('Login Gmail first!');return;}
+    if(!currentGmailUser||!database){showToast('Sign in with Google first!');return;}
     var userKeyLower = currentGmailUser.trim().toLowerCase().replace(/[.#$[\]]/g,'_');
     var payload = {players:players,history:matchHistory,leagues:leagues,rivalries:rivalries,timestamp:new Date().toISOString()};
     database.ref('backups/'+userKeyLower).set(payload).then(()=>{
@@ -3087,7 +3254,7 @@ function cloudBackup(){
         if(cb)cb.innerText='Last Backup: '+new Date().toLocaleTimeString();
         showToast('☁️ Cloud Backup Saved Successfully!');
     }).catch(err => {
-        showToast('⚠️ Cloud Save Error: ' + err.message);
+        showToast('⚠️ Cloud Save Error (Check Firebase Rules): ' + err.message);
     });
 }
 
@@ -3112,7 +3279,7 @@ function applyRestoredData(d) {
 }
 
 function cloudRestore(isFromLogin){
-    if(!currentGmailUser||!database){showToast('Login Gmail first!');return;}
+    if(!currentGmailUser||!database){showToast('Sign in with Google first!');return;}
     var rawEmail = currentGmailUser.trim();
     var exactKey = rawEmail.replace(/[.#$[\]]/g,'_');
     var lowerKey = rawEmail.toLowerCase().replace(/[.#$[\]]/g,'_');
@@ -3139,13 +3306,13 @@ function cloudRestore(isFromLogin){
                     if(isFromLogin && (players.length > 0 || matchHistory.length > 0)) {
                         cloudBackup();
                     } else {
-                        showToast('❌ No previous backup found for ' + rawEmail);
+                        showToast('ℹ️ No previous cloud backup found — Ready for new backup!');
                     }
                 }
             });
         });
     }).catch(err => {
-        showToast('❌ Cloud Restore Error: ' + err.message);
+        showToast('❌ Cloud Error (Check Firebase Database Rules): ' + err.message);
     });
 }
 
