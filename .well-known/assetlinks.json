@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.ඔබේ_github_නම.twa",
+      "sha256_cert_fingerprints": [
+        "ඔබේ_SHA_256_FINGERPRINT_එක_මෙතනට_දමන්න"
+      ]
+    }
+  }
+]
