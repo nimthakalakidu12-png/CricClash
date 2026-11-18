@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#030306">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>CRIC CLASH v30 • SUPREME LIQUID BROADCAST EDITION</title>
+<link rel="manifest" href="manifest.json">
+<title>CRIC CLASH v30 • SUPREME LIQUID EDITION</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -18,36 +19,50 @@
 <div id="impactRippleOverlay"></div>
 <div class="ambient-bg"><div class="orb o1" id="bgOrb1"></div><div class="orb o2" id="bgOrb2"></div><div class="orb o3" id="bgOrb3"></div></div>
 
+<!-- 4 / 6 / OUT Broadcast Pop-up Animation -->
+<div id="eventPopupBox" class="event-popup-box" style="display:none">
+  <div id="eventPopupIcon" class="event-popup-icon">💥</div>
+  <div id="eventPopupTitle" class="event-popup-title">MASSIVE SIX!</div>
+  <div id="eventPopupSub" class="event-popup-sub">OUT OF THE PARK</div>
+</div>
+
+<!-- 50 / 100 Bat Raise Milestone Animation -->
+<div id="batRaiseAnimBox" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:25000;text-align:center;pointer-events:none;background:rgba(10,12,22,0.94);padding:22px 32px;border-radius:26px;border:2px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,0.9)">
+  <div class="bat-raise-icon">🏏</div>
+  <div id="batRaiseText" style="font-size:32px;font-family:'Space Grotesk',sans-serif;font-weight:900;color:var(--gold)">50 RUNS!</div>
+  <div id="batRaisePlayer" style="font-size:15px;font-weight:900;color:#fff;margin-top:4px;letter-spacing:1px">PLAYER</div>
+</div>
+
 <!-- Full-Screen Live Spectator TV Broadcast Screen -->
 <div id="fullSpectatorBroadcastScreen">
   <div style="max-width:440px;margin:0 auto;padding-bottom:40px">
     <div class="glass hero holo-card" style="padding:14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <span class="sync-pill" style="background:rgba(255,45,85,0.2);color:#ff2d55;border-color:#ff2d55"><span class="live-dot" style="background:#ff2d55"></span> LIVE BALL-BY-BALL TV</span>
-          <h2 style="margin:5px 0 0;font-size:18px;font-family:'Space Grotesk',sans-serif">CRIC CLASH • LIVE STREAM</h2>
+          <span class="sync-pill" style="background:rgba(255,45,85,0.2);color:#ff2d55;border-color:#ff2d55"><span class="live-dot" style="background:#ff2d55"></span> LIVE TV</span>
+          <h2 style="margin:5px 0 0;font-size:18px;font-family:'Space Grotesk',sans-serif">CRIC CLASH • LIVE</h2>
         </div>
         <div style="text-align:right">
           <div id="tvSpecRoomCode" style="font-size:12px;font-weight:900;color:var(--gold)">ROOM #----</div>
           <div style="display:flex;gap:4px;margin-top:5px;justify-content:flex-end">
-            <button class="btn light" id="tvSpecAudioBtn" style="padding:4px 8px;font-size:8px;color:#fff" onclick="toggleSpecAudio()">🔊 AUDIO ON</button>
+            <button class="btn light" id="tvSpecAudioBtn" style="padding:4px 8px;font-size:8px;color:#fff" onclick="toggleSpecAudio()">🔊 AUDIO</button>
             <button class="btn red" style="padding:4px 8px;font-size:8px" onclick="closeFullSpectatorScreen()">✕ EXIT</button>
           </div>
         </div>
       </div>
     </div>
     <div id="tvSpecLiveBody">
-      <div class="glass" style="text-align:center;padding:30px">⏳ Connecting to Live Ball-by-Ball Broadcast...</div>
+      <div class="glass" style="text-align:center;padding:30px">⏳ Connecting to Live Broadcast...</div>
     </div>
   </div>
 </div>
 
 <!-- Floating Quick HUD -->
 <div class="floating-hud" id="floatingHud">
-  <button class="fab-btn" id="fabStrikeBtn" onclick="switchStrikeBtn()" title="1-Tap Strike Swap">🔄</button>
-  <button class="fab-btn" onclick="quickNextBowler()" title="1-Tap Bowler Rotate">🎯</button>
-  <button class="fab-btn" onclick="undo()" title="Quick Undo">↩️</button>
-  <button class="fab-btn" onclick="openLiveGraphsModal()" title="Live Worm Chart">📈</button>
+  <button class="fab-btn" id="fabStrikeBtn" onclick="switchStrikeBtn()" title="Strike Swap">🔄</button>
+  <button class="fab-btn" onclick="quickNextBowler()" title="Next Bowler">🎯</button>
+  <button class="fab-btn" onclick="undo()" title="Undo">↩️</button>
+  <button class="fab-btn" onclick="openLiveGraphsModal()" title="Charts">📈</button>
 </div>
 
 <div class="app" id="mainAppContainer">
@@ -57,7 +72,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="display:flex;align-items:center;gap:6px">
-          <span class="sync-pill"><span class="live-dot"></span> <span id="storageSyncLabel">LIQUID CLOUD READY</span></span>
+          <span class="sync-pill"><span class="live-dot"></span> <span id="storageSyncLabel">CLOUD READY</span></span>
         </div>
         <h1 style="margin:6px 0 0;font-size:26px;font-family:'Space Grotesk',sans-serif;letter-spacing:-0.5px">CRIC<br><span style="color:var(--gold)">CLASH v30</span></h1>
       </div>
@@ -65,24 +80,24 @@
         <div style="font-size:9px;color:#aaa;font-weight:800">CLASHES</div>
         <div style="font-size:20px;font-weight:900;color:#fff" id="totalMatchesHero">0</div>
         <div style="display:flex;gap:4px;margin-top:5px;justify-content:flex-end">
-          <button class="btn light" style="background:rgba(255,255,255,0.14);color:#fff;padding:6px 9px" onclick="openSpectatorHub()" title="Live Link & QR Hub">📡 QR/LIVE</button>
-          <button class="btn light" style="background:rgba(255,255,255,0.14);color:#fff;padding:6px 9px" onclick="cycleAppTheme()" title="Switch Theme">🎨</button>
+          <button id="pwaInstallBtn" class="btn gold" style="display:none;padding:6px 9px;font-size:9px" onclick="installPWA()">📲 APP</button>
+          <button class="btn light" style="background:rgba(255,255,255,0.14);color:#fff;padding:6px 9px" onclick="cycleAppTheme()">🎨 THEME</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Public Live Matches & Public Finished History Box -->
+  <!-- Public Live & Archive Hub -->
   <div id="rivalryBox" class="glass" style="border:1.5px solid var(--cyan);padding:11px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="live-dot" style="background:#ff2d55"></span>
-        <span style="font-size:11px;font-weight:900;color:var(--gold)">🌐 PUBLIC LIVE & ARCHIVE HUB</span>
+        <span style="font-size:11px;font-weight:900;color:var(--gold)">🌐 LIVE & ARCHIVE HUB</span>
       </div>
       <div style="display:flex;gap:4px">
-        <button class="btn light active" id="pubHubTab_live" style="padding:4px 8px;font-size:8px" onclick="switchPublicHubTab('live')">🔴 LIVE NOW</button>
+        <button class="btn light active" id="pubHubTab_live" style="padding:4px 8px;font-size:8px" onclick="switchPublicHubTab('live')">🔴 LIVE</button>
         <button class="btn light" id="pubHubTab_history" style="padding:4px 8px;font-size:8px" onclick="switchPublicHubTab('history')">📜 HISTORY</button>
-        <button class="btn light" style="padding:4px 7px;font-size:8px" onclick="refreshPublicHubFeed()" title="Refresh">🔄</button>
+        <button class="btn light" style="padding:4px 7px;font-size:8px" onclick="refreshPublicHubFeed()">🔄</button>
       </div>
     </div>
     <div id="publicHubLiveContent"></div>
@@ -92,54 +107,52 @@
   <!-- Setup Clash Card -->
   <div class="glass" style="border:1.5px solid var(--gold);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h3 style="margin:0;font-size:13px">⚔️ SETUP LIQUID BROADCAST CLASH</h3>
-      <div style="display:flex;gap:4px">
-        <span id="autoSaveBadge" style="background:#00c853;color:#fff;padding:3px 7px;border-radius:99px;font-size:7px;font-weight:900">🛡️ ZERO-LOSS SAVE</span>
-      </div>
+      <h3 style="margin:0;font-size:13px">⚔️ MATCH SETUP</h3>
+      <span id="autoSaveBadge" style="background:#00c853;color:#fff;padding:3px 7px;border-radius:99px;font-size:7px;font-weight:900">🛡️ AUTO-SAVE</span>
     </div>
 
     <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-bottom:10px">
       <div>
-        <label style="font-size:9px;font-weight:800;color:var(--muted)">MATCH MODE</label>
+        <label style="font-size:9px;font-weight:800;color:var(--muted)">MODE</label>
         <select id="matchModeSelect" onchange="toggleSetupMode()">
           <option value="1v1">⚡ 1 vs 1 Clash</option>
-          <option value="team">🛡️ Team vs Team (1v2, Squads)</option>
-          <option value="ffa">👑 Solo Free-for-All (3-11P)</option>
+          <option value="team">🛡️ Team vs Team (1v2, 1v3+)</option>
+          <option value="ffa">👑 Solo FFA (3-11P)</option>
         </select>
       </div>
       <div>
-        <label style="font-size:9px;font-weight:800;color:var(--muted)">OVERS (PER INNINGS)</label>
+        <label style="font-size:9px;font-weight:800;color:var(--muted)">OVERS</label>
         <select id="setupOvers" onchange="toggleCustomOversInput('setupOvers', 'customOversInput')">
-          <option value="1">1 Over (Sprint)</option>
+          <option value="1">1 Over</option>
           <option value="2">2 Overs</option>
           <option value="3">3 Overs</option>
           <option value="5">5 Overs</option>
           <option value="10" selected>10 Overs</option>
-          <option value="20">20 Overs (T20)</option>
+          <option value="20">20 Overs</option>
           <option value="999">Unlimited</option>
-          <option value="custom">⚙️ Custom Overs</option>
+          <option value="custom">⚙️ Custom</option>
         </select>
         <input type="number" id="customOversInput" placeholder="Enter Overs" style="display:none;margin-top:5px;border-color:var(--gold)">
       </div>
     </div>
 
-    <!-- 1v1 Area (Interactive Player Cards instead of Dropdown) -->
+    <!-- 1v1 Area -->
     <div id="setup1v1Area">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div style="background:var(--pill-bg);padding:9px;border-radius:16px;border:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <label style="font-size:8px;font-weight:900;color:var(--gold)">🏏 STRIKER (1ST BAT)</label>
+            <label style="font-size:8px;font-weight:900;color:var(--gold)">🏏 STRIKER</label>
             <span id="p1PickedBadge" class="badge gold" style="font-size:7px"></span>
           </div>
-          <input type="text" class="liquid-search-input" placeholder="🔍 Search..." oninput="filterSetupPlayerCards('1v1', this.value)" style="padding:6px;font-size:9px;margin-top:4px">
+          <input type="text" class="liquid-search-input" placeholder="🔍 Search..." oninput="filterSetupPlayerCards('1v1A', this.value)" style="padding:6px;font-size:9px;margin-top:4px">
           <div class="multi-select-list" id="setup1v1StrikerList" style="max-height:165px;margin-top:6px;border-color:var(--gold)"></div>
         </div>
         <div style="background:var(--pill-bg);padding:9px;border-radius:16px;border:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <label style="font-size:8px;font-weight:900;color:var(--cyan)">🎯 BOWLER (1ST BOWL)</label>
+            <label style="font-size:8px;font-weight:900;color:var(--cyan)">🎯 BOWLER</label>
             <span id="p2PickedBadge" class="badge dark" style="font-size:7px;color:var(--cyan);border-color:var(--cyan)"></span>
           </div>
-          <input type="text" class="liquid-search-input" placeholder="🔍 Search..." oninput="filterSetupPlayerCards('1v1', this.value)" style="padding:6px;font-size:9px;margin-top:4px">
+          <input type="text" class="liquid-search-input" placeholder="🔍 Search..." oninput="filterSetupPlayerCards('1v1B', this.value)" style="padding:6px;font-size:9px;margin-top:4px">
           <div class="multi-select-list" id="setup1v1BowlerList" style="max-height:165px;margin-top:6px;border-color:var(--cyan)"></div>
         </div>
       </div>
@@ -148,13 +161,16 @@
     <!-- Team vs Team Area -->
     <div id="setupTeamArea" style="display:none; margin-top:10px;">
       <div style="margin-bottom:8px;background:var(--pill-bg);padding:8px 10px;border-radius:14px;border:1px solid var(--gold)">
-        <label style="font-size:8px;font-weight:900;color:var(--gold)">🏏 TEAM WICKET RULE (SUPPORTS 1v2, 1v3 SQUADS)</label>
-        <select id="teamWicketRuleSelect" style="margin-top:4px;padding:8px;font-size:11px">
-          <option value="all_out" selected>🔥 All Batters Must Out (Last Man Stands)</option>
-          <option value="standard">🏏 Standard Cricket Pairs</option>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label style="font-size:8px;font-weight:900;color:var(--gold)">🏏 WICKET RULE (1v2, 1v3, 1v4, 1v5+)</label>
+          <span id="teamFormatVsBadge" class="badge gold" style="font-size:8px;padding:2px 8px">0 vs 0</span>
+        </div>
+        <select id="teamWicketRuleSelect" style="margin-top:5px;padding:8px;font-size:11px">
+          <option value="all_out" selected>🔥 Last Man Stands (All Out)</option>
+          <option value="standard">🏏 Standard Pairs</option>
         </select>
       </div>
-      <input type="text" id="teamSquadSearchInput" class="liquid-search-input" placeholder="🔍 Quick search player to add to squad..." oninput="filterSetupPlayerCards('team', this.value)">
+      <input type="text" id="teamSquadSearchInput" class="liquid-search-input" placeholder="🔍 Search player..." oninput="filterSetupPlayerCards('team', this.value)" style="margin-bottom:8px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div id="teamASetupCard" style="background:rgba(66,133,244,0.08);border:1.5px solid #4285f4;padding:9px;border-radius:16px">
           <div style="display:flex;gap:4px;margin-bottom:6px;align-items:center">
@@ -164,7 +180,7 @@
             <button class="btn light" style="padding:5px" onclick="document.getElementById('teamALogoFile').click()">🛡️</button>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <label style="font-size:8px;font-weight:900;color:var(--muted)">BAT SQUAD (1+)</label>
+            <label style="font-size:8px;font-weight:900;color:var(--muted)">BAT SQUAD</label>
             <span id="teamACountBadge" class="badge dark">0 Picked</span>
           </div>
           <div class="multi-select-list" id="teamAList" style="border-color:#4285f4;max-height:155px;margin-bottom:0"></div>
@@ -177,7 +193,7 @@
             <button class="btn light" style="padding:5px" onclick="document.getElementById('teamBLogoFile').click()">🛡️</button>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <label style="font-size:8px;font-weight:900;color:var(--muted)">BOWL SQUAD (1+)</label>
+            <label style="font-size:8px;font-weight:900;color:var(--muted)">BOWL SQUAD</label>
             <span id="teamBCountBadge" class="badge dark">0 Picked</span>
           </div>
           <div class="multi-select-list" id="teamBList" style="border-color:#ff1744;max-height:155px;margin-bottom:0"></div>
@@ -189,13 +205,10 @@
     <div id="setupFFAArea" style="display:none; margin-top:10px;">
       <div style="background:linear-gradient(135deg,rgba(245,197,66,0.12),rgba(10,132,255,0.1));border:1.5px solid var(--gold);padding:11px;border-radius:18px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div>
-            <div style="font-size:10px;font-weight:900;color:var(--gold)">👑 SOLO FREE-FOR-ALL (3 TO 11 PLAYERS)</div>
-            <div style="font-size:8px;color:var(--muted)">Tap player cards to add • Pick who bats first & next on every Out!</div>
-          </div>
+          <div style="font-size:10px;font-weight:900;color:var(--gold)">👑 SOLO FFA (3-11 PLAYERS)</div>
           <span id="ffaSelectedCountBadge" style="background:var(--gold);color:#111;padding:3px 8px;border-radius:99px;font-size:9px;font-weight:900">0 / 11</span>
         </div>
-        <input type="text" id="ffaSquadSearchInput" class="liquid-search-input" placeholder="🔍 Search player for Solo FFA..." oninput="filterSetupPlayerCards('ffa', this.value)">
+        <input type="text" id="ffaSquadSearchInput" class="liquid-search-input" placeholder="🔍 Search player..." oninput="filterSetupPlayerCards('ffa', this.value)" style="margin-bottom:6px">
         <div class="multi-select-list" id="ffaPlayersList" style="border-color:var(--gold);max-height:165px;margin-bottom:0"></div>
       </div>
     </div>
@@ -203,11 +216,11 @@
     <button class="btn gold" style="width:100%;padding:14px;font-size:12px;margin-top:10px" onclick="startSetupMatch()">⚔️ START CLASH →</button>
   </div>
 
-  <!-- Match Archive + Paused Incomplete Matches Resume Section -->
+  <!-- Match Archive -->
   <div class="glass">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0;font-size:11px">📜 Match Archive • Resume • Summary • MVP</h3>
-      <button class="btn light" style="padding:4px 8px;font-size:9px" onclick="clearHistory()" title="Clears history list only (Player career stats stay safe)">Clear All</button>
+      <h3 style="margin:0;font-size:11px">📜 Match Archive & Resume</h3>
+      <button class="btn light" style="padding:4px 8px;font-size:9px" onclick="clearHistory()">Clear All</button>
     </div>
     <div id="pausedMatchesContainer"></div>
     <div id="matchHistoryList"></div>
@@ -217,7 +230,7 @@
 
 <!-- PROFILES PAGE -->
 <div id="profilesPage" class="page">
-  <div class="glass"><h2 style="margin:0;font-size:14px">👤 Players & Career Milestones</h2></div>
+  <div class="glass"><h2 style="margin:0;font-size:14px">👤 Players & Career (Radar Analytics)</h2></div>
   <div class="glass">
     <div style="display:flex;gap:6px">
       <input type="text" id="pName" placeholder="Enter player name" style="flex:1">
@@ -227,33 +240,33 @@
     </div>
     <div style="margin-top:8px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:9px;font-weight:800;color:var(--muted)">JERSEY AURA COLOR</span>
+        <span style="font-size:9px;font-weight:800;color:var(--muted)">JERSEY COLOR</span>
         <input type="color" id="customColorPicker" value="#f5c542" style="width:28px;height:24px;padding:0;border:none;background:transparent;cursor:pointer" onchange="selectTheme(this.value)">
       </div>
       <div id="themeSelector" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
     </div>
-    <button class="btn gold" style="width:100%;padding:11px;margin-top:10px" onclick="addProfile()">+ ADD PLAYER TO ROSTER</button>
+    <button class="btn gold" style="width:100%;padding:11px;margin-top:10px" onclick="addProfile()">+ ADD PLAYER</button>
   </div>
   <div class="glass">
-    <div style="font-size:11px;font-weight:900;margin-bottom:8px">REGISTERED PLAYERS & CAREER MILESTONES</div>
+    <div style="font-size:11px;font-weight:900;margin-bottom:8px">REGISTERED PLAYERS (TAP FOR RADAR CHART)</div>
     <div id="profilesList"></div>
   </div>
 </div>
 
-<!-- MATCH PAGE (NAV BAR HIDDEN • TOP-LEFT SAFE PAUSE/BACK BUTTON) -->
+<!-- MATCH PAGE -->
 <div id="matchPage" class="page">
   <div class="jumbotron" id="liveJumbotronBox" style="margin-bottom:11px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:7px">
-        <button class="match-back-btn" onclick="pauseAndExitToHome()" title="Pause Match & Return Home (Resume Later)">←</button>
+        <button class="match-back-btn" onclick="pauseAndExitToHome()" title="Pause & Exit">←</button>
         <span class="live-dot"></span>
-        <span style="font-size:9px;font-weight:900;color:var(--gold);letter-spacing:0.5px" id="liveInningsTitle">LIVE BROADCAST</span>
+        <span style="font-size:9px;font-weight:900;color:var(--gold);letter-spacing:0.5px" id="liveInningsTitle">LIVE</span>
         <span id="broadcastPrivacyBadge" style="font-size:7px;padding:2px 6px;border-radius:99px;font-weight:900;background:rgba(255,255,255,0.12);color:#ccc">OFFLINE</span>
         <span id="freeHitBadge" style="display:none;background:#ff1744;color:#fff;padding:2px 7px;border-radius:99px;font-size:8px;font-weight:900">FREE HIT!</span>
       </div>
       <div style="display:flex;gap:4px;align-items:center">
-        <button id="voiceScoreBtn" class="btn light" style="padding:4px 8px;font-size:8px;border-radius:99px;background:rgba(255,255,255,0.12);color:#fff" onclick="toggleVoiceScoring()">🎙️ OFF</button>
-        <button class="btn light" style="padding:4px 8px;font-size:8px;border-radius:99px;background:rgba(255,255,255,0.12);color:#fff" onclick="openSpectatorHub()" title="Live Wi-Fi Broadcast Room + QR">📡 QR</button>
+        <button id="voiceScoreBtn" class="btn light" style="padding:4px 8px;font-size:8px;border-radius:99px;background:rgba(255,255,255,0.12);color:#fff" onclick="toggleVoiceScoring()">🎙️ VOICE OFF</button>
+        <button class="btn light" style="padding:4px 8px;font-size:8px;border-radius:99px;background:rgba(255,255,255,0.12);color:#fff" onclick="openSpectatorHub()">📡 QR</button>
       </div>
     </div>
 
@@ -273,14 +286,27 @@
       </div>
     </div>
 
+    <!-- Live AI Win Predictor Bar -->
+    <div id="winPredictorBox" style="margin-top:10px;padding:7px 10px;background:rgba(0,0,0,0.35);border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+      <div style="display:flex;justify-content:space-between;font-size:8px;font-weight:900;margin-bottom:4px">
+        <span id="winPredTeamA" style="color:var(--gold)">TEAM A 50%</span>
+        <span style="color:var(--muted);letter-spacing:0.5px">🤖 AI WIN PREDICTOR</span>
+        <span id="winPredTeamB" style="color:var(--cyan)">TEAM B 50%</span>
+      </div>
+      <div class="h2h-bar-track" style="height:6px">
+        <div id="winPredBarA" style="width:50%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width 0.35s ease"></div>
+        <div id="winPredBarB" style="width:50%;background:var(--cyan);transition:width 0.35s ease"></div>
+      </div>
+    </div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:8px;color:#bbb;font-weight:800">
       <span id="extrasCounterBadge" style="color:var(--cyan)">EXTRAS: 0 (WD:0 | NB:0)</span>
-      <span id="wicketsOrTurnBadge">WICKETS DOWN: <b id="wicketText" style="color:#ff2d55">0</b></span>
+      <span id="wicketsOrTurnBadge">WICKETS: <b id="wicketText" style="color:#ff2d55">0</b></span>
     </div>
 
     <!-- Commentary Box -->
     <div class="commentary-box">
-      <div style="width:28px;height:28px;background:var(--gold);color:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🎙️</div>
+      <div style="width:28px;height:28px;background:var(--gold);color:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;cursor:pointer" onclick="testVoiceAudio()" title="Tap to test voice">🔊</div>
       <div style="flex:1">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <span class="tone-pill">🔥 STADIUM LIVE</span>
@@ -297,7 +323,7 @@
   <!-- Batting Crease Card -->
   <div class="glass" id="battingCreaseCard" style="border-left:4px solid var(--gold);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-size:10px;font-weight:900;color:var(--muted)">🏏 BATTING CREASE <span id="lastManBadge" style="display:none;background:#ff2d55;color:#fff;padding:2px 6px;border-radius:99px;font-size:7px;margin-left:4px">SOLO BATTER!</span></div>
+      <div style="font-size:10px;font-weight:900;color:var(--muted)">🏏 BATTING <span id="lastManBadge" style="display:none;background:#ff2d55;color:#fff;padding:2px 6px;border-radius:99px;font-size:7px;margin-left:4px">SOLO!</span></div>
       <div style="display:flex;gap:4px;align-items:center">
         <span id="partnershipBadge" style="font-size:8px;background:var(--pill-bg);padding:2px 7px;border-radius:99px;border:1px solid var(--border);font-weight:800">Stand: 0(0)</span>
         <button id="strikeRotateBtn" class="btn light" style="padding:3px 7px;font-size:8px" onclick="switchStrikeBtn()">⚡ STRIKE</button>
@@ -325,10 +351,10 @@
   <!-- Bowling Attack Card -->
   <div class="glass" id="bowlingAttackCard" style="border-left:4px solid #4285f4;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-size:10px;font-weight:900;color:var(--muted)">🎯 BOWLING ATTACK</div>
+      <div style="font-size:10px;font-weight:900;color:var(--muted)">🎯 BOWLING</div>
       <div style="display:flex;gap:4px">
-        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="quickNextBowler()">⚡ NEXT BOWLER</button>
-        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="openChangeBowler()">🔄 SELECT BOWLER</button>
+        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="quickNextBowler()">⚡ NEXT</button>
+        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="openChangeBowler()">🔄 SELECT</button>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -346,7 +372,7 @@
     </div>
   </div>
 
-  <!-- Clean Pro Broadcast Control Deck -->
+  <!-- Control Deck -->
   <div class="glass">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
       <button class="btn light score-pad-btn" onclick="score(1)">+1</button>
@@ -359,10 +385,11 @@
       <button class="btn red score-pad-btn" onclick="outPlayer()">OUT</button>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px">
-      <button class="btn dark uniform-btn" style="background:#ff6f00;font-size:9px;border:none" onclick="extraNoBall()">NB + FREE HIT</button>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:7px">
+      <button class="btn dark uniform-btn" style="background:#ff6f00;font-size:9px;border:none" onclick="extraNoBall()">NB + FH</button>
+      <button class="btn light uniform-btn" style="font-size:9px;border-color:var(--gold);color:var(--gold)" onclick="scoreOverthrow()">+ OT</button>
       <button class="btn light uniform-btn" style="font-size:9px" onclick="switchStrikeBtn()">⚡ STRIKE</button>
-      <button class="btn light uniform-btn" style="font-size:9px" onclick="quickNextBowler()">⚡ NEXT BOWL</button>
+      <button class="btn light uniform-btn" style="font-size:9px" onclick="quickNextBowler()">⚡ BOWL</button>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:7px">
@@ -371,16 +398,17 @@
       <button class="btn gold uniform-btn" onclick="openLiveGraphsModal()">📈 CHARTS</button>
       <button class="btn light uniform-btn" onclick="confirmAbandonMatch()">🗑️ ABORT</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
-      <button class="btn dark uniform-btn" style="font-size:10px;border-color:var(--gold)" onclick="shareLiveLink()">📡 LINK + QR SHARE</button>
+
+    <div id="shareLiveBtnWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+      <button class="btn dark uniform-btn" style="font-size:10px;border-color:var(--gold)" onclick="shareLiveLink()">📡 LINK + QR</button>
       <button class="btn light uniform-btn" style="font-size:10px" onclick="triggerDLSMethod()">🌧️ DLS TARGET</button>
     </div>
   </div>
 
-  <!-- Ball-by-Ball Timeline & Match Highlights -->
+  <!-- Ball Timeline -->
   <div class="glass">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-size:10px;font-weight:900;color:var(--muted)">🎬 BALL TIMELINE & HIGHLIGHTS</div>
+      <div style="font-size:10px;font-weight:900;color:var(--muted)">🎬 BALL TIMELINE</div>
       <div style="display:flex;gap:3px">
         <button class="btn light active" id="hlBtn_all" style="padding:3px 6px;font-size:8px" onclick="setHighlightFilter('all')">ALL</button>
         <button class="btn light" id="hlBtn_boundaries" style="padding:3px 6px;font-size:8px" onclick="setHighlightFilter('boundaries')">4s/6s</button>
@@ -391,44 +419,42 @@
   </div>
 </div>
 
-<!-- LEAGUE PAGE (AUCTION REMOVED + CUSTOM OVERS ADDED) -->
+<!-- LEAGUE PAGE -->
 <div id="leaguePage" class="page">
-  <div class="glass">
-    <h2 style="margin:0;font-size:14px">🏆 Tournament Bracket & League</h2>
-  </div>
+  <div class="glass"><h2 style="margin:0;font-size:14px">🏆 Pro League & Points Table</h2></div>
   <div class="glass" style="border:2px solid var(--gold);padding:14px">
-    <input type="text" id="leagueNameInput" placeholder="🏏 Enter tournament name" style="margin-bottom:12px;padding:12px">
+    <input type="text" id="leagueNameInput" placeholder="🏏 Enter tournament name (e.g. Lankans Premier League)" style="margin-bottom:12px;padding:12px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
       <div style="background:var(--pill-bg);padding:10px;border-radius:10px;border:1px solid var(--border)">
         <label style="font-size:8px;font-weight:900;color:var(--muted)">OVERS</label>
         <select id="leagueOvers" onchange="toggleCustomOversInput('leagueOvers', 'customLeagueOversInput')">
           <option value="1">1 Over</option>
-          <option value="2">2 Overs</option>
+          <option value="2" selected>2 Overs</option>
           <option value="5">5 Overs</option>
-          <option value="10" selected>10 Overs</option>
+          <option value="10">10 Overs</option>
           <option value="20">20 Overs</option>
-          <option value="custom">⚙️ Custom Overs</option>
+          <option value="custom">⚙️ Custom</option>
         </select>
         <input type="number" id="customLeagueOversInput" placeholder="Custom Overs" style="display:none;margin-top:5px;border-color:var(--gold)">
       </div>
       <div style="background:var(--pill-bg);padding:10px;border-radius:10px;border:1px solid var(--border)">
         <label style="font-size:8px;font-weight:900;color:var(--muted)">FORMAT</label>
-        <select id="leagueType"><option value="round" selected>Round Robin + Final</option><option value="knockout">Knockout Bracket Tree</option></select>
+        <select id="leagueType"><option value="round" selected>Round Robin + Final</option><option value="knockout">Knockout</option></select>
       </div>
     </div>
     <div style="background:var(--pill-bg);padding:10px;border-radius:16px;border:1px dashed var(--border);margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:10px;font-weight:900">👥 TAP PLAYERS TO ENTER LEAGUE (Min 3)</div>
+        <div style="font-size:10px;font-weight:900">👥 TAP PLAYERS (Min 3)</div>
         <span id="leagueSelectedCount" style="font-size:9px;background:var(--gold);color:#111;font-weight:900;padding:3px 8px;border-radius:99px">0 selected</span>
       </div>
       <div id="leaguePlayerChecklist" style="max-height:170px;overflow:auto"></div>
     </div>
-    <button class="btn gold" style="width:100%;padding:14px;font-size:12px" onclick="createLeague()">+ CREATE LEAGUE 🚀</button>
+    <button class="btn gold" style="width:100%;padding:14px;font-size:12px" onclick="createLeague()">+ CREATE TOURNAMENT 🚀</button>
   </div>
 
   <div class="glass">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0;font-size:11px">My Tournaments</h3>
+      <h3 style="margin:0;font-size:11px">Active Tournaments & Standings</h3>
       <span id="leagueCountBadge" style="font-size:9px;background:var(--pill-bg);padding:4px 10px;border-radius:99px;border:1px solid var(--border)">0</span>
     </div>
     <div id="leaguesList" style="margin-top:8px"></div>
@@ -436,11 +462,11 @@
   </div>
 </div>
 
-<!-- LEADERBOARD PAGE (WITH AVG & SR TABS + ADVANCED H2H) -->
+<!-- LEADERBOARD PAGE -->
 <div id="leaderPage" class="page">
   <div class="glass">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <h2 style="margin:0;font-size:14px">🏆 Leaderboard • Caps & H2H</h2>
+      <h2 style="margin:0;font-size:14px">🏆 Leaderboard & H2H</h2>
       <button class="btn gold" style="padding:6px 10px;font-size:9px" onclick="openCompareModal()">⚔️ H2H RIVALRY</button>
     </div>
   </div>
@@ -458,20 +484,20 @@
   </div>
 </div>
 
-<!-- REALISTIC TROPHY ROOM & 113 UNLOCKABLE BADGES SHOWCASE PAGE -->
+<!-- TROPHY ROOM PAGE -->
 <div id="trophyPage" class="page">
   <div class="glass hero holo-card" style="padding:14px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="font-size:9px;color:var(--gold);font-weight:900">3D PEDESTAL MUSEUM & 113 UNLOCKABLE BADGES</div>
-        <h2 style="margin:3px 0 0;font-size:17px">🏆 TROPHIES & ACHIEVEMENTS</h2>
+        <div style="font-size:9px;color:var(--gold);font-weight:900">113 UNLOCKABLE BADGES</div>
+        <h2 style="margin:3px 0 0;font-size:17px">🏆 TROPHIES & BADGES</h2>
       </div>
       <div style="font-size:28px">🏛️</div>
     </div>
   </div>
   <div id="trophyStatsDashboard" class="glass holo-card" style="border-left:4px solid var(--gold)"></div>
   <div class="tab-bar" style="margin-bottom:0">
-    <button class="btn light active" id="btnTabTrophyBadges" onclick="renderTrophiesTab('badges')">🎖️ Badges Showcase</button>
+    <button class="btn light active" id="btnTabTrophyBadges" onclick="renderTrophiesTab('badges')">🎖️ Badges</button>
     <button class="btn light" id="btnTabTrophyMatch" onclick="renderTrophiesTab('match')">🏅 Match MVP</button>
     <button class="btn light" id="btnTabTrophyHOF" onclick="renderTrophiesTab('hof')">🌟 Hall of Fame</button>
   </div>
@@ -484,34 +510,35 @@
 
 <!-- SETTINGS PAGE -->
 <div id="settingsPage" class="page">
-  <div class="glass"><h2 style="margin:0;font-size:16px">⚙️ Broadcast Settings & Themes</h2><small style="color:var(--muted)">CRIC CLASH v30 SUPREME LIQUID EDITION</small></div>
+  <div class="glass"><h2 style="margin:0;font-size:16px">⚙️ Settings & Themes</h2><small style="color:var(--muted)">CRIC CLASH v30 SUPREME</small></div>
 
   <div class="glass" style="border:1.5px solid var(--gold)">
-    <div style="font-size:11px;font-weight:900;color:var(--gold);margin-bottom:8px">🎭 5 CUSTOM LIQUID THEMES (TAP TO SWITCH)</div>
+    <div style="font-size:11px;font-weight:900;color:var(--gold);margin-bottom:8px">🎭 LIQUID THEMES</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
       <div id="themeBtn_oled" class="theme-card-btn active" onclick="setAppTheme('oled')">🌑 OLED Dark</div>
       <div id="themeBtn_ipl" class="theme-card-btn" onclick="setAppTheme('ipl')">💙 Royal IPL</div>
       <div id="themeBtn_turf" class="theme-card-btn" onclick="setAppTheme('turf')">🌿 Emerald Turf</div>
       <div id="themeBtn_cyber" class="theme-card-btn" onclick="setAppTheme('cyber')">💜 Cyber Neon</div>
-      <div id="themeBtn_frost" class="theme-card-btn" onclick="setAppTheme('frost')">❄️ Frost Light</div>
+      <div id="themeBtn_crimson" class="theme-card-btn" onclick="setAppTheme('crimson')">🔥 Crimson Fire</div>
+      <div id="themeBtn_matrix" class="theme-card-btn" onclick="setAppTheme('matrix')">💻 Matrix Hacker</div>
     </div>
   </div>
 
   <div class="glass">
-    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">🎙️ AI Voice Commentary</div><div style="font-size:9px;color:var(--muted)">Dynamic stadium announcements</div></div><div class="toggle on" id="voiceToggle" onclick="toggleSetting('voice')"></div></div>
-    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">🔊 Stadium SFX</div><div style="font-size:9px;color:var(--muted)">Bat hits, boundary & wicket audio</div></div><div class="toggle on" id="sfxToggle" onclick="toggleSetting('sfx')"></div></div>
-    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">💾 Instant Auto-Save & Cloud Sync</div><div style="font-size:9px;color:var(--muted)">Zero data loss on refresh + Firebase sync</div></div><div class="toggle on" id="autoSaveToggle" onclick="toggleSetting('autoSave')"></div></div>
-    <div class="settings-item" style="cursor:pointer" onclick="openAboutApp()"><div><div style="font-weight:800;font-size:12px">ℹ️ About v30 Supreme Edition</div><div style="font-size:9px;color:var(--muted)">Tap to view full capabilities</div></div><div style="font-size:16px">→</div></div>
+    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">🎙️ AI Voice Commentary</div><div style="font-size:9px;color:var(--muted)">Stadium announcements</div></div><div class="toggle on" id="voiceToggle" onclick="toggleSetting('voice')"></div></div>
+    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">🔊 Pro Stadium SFX</div><div style="font-size:9px;color:var(--muted)">Bat crack, crowd roar & wicket FX</div></div><div class="toggle on" id="sfxToggle" onclick="toggleSetting('sfx')"></div></div>
+    <div class="settings-item"><div><div style="font-weight:800;font-size:12px">💾 Auto-Save & Cloud Sync</div><div style="font-size:9px;color:var(--muted)">Instant zero-loss sync</div></div><div class="toggle on" id="autoSaveToggle" onclick="toggleSetting('autoSave')"></div></div>
+    <div class="settings-item" style="cursor:pointer" onclick="openAboutApp()"><div><div style="font-weight:800;font-size:12px">ℹ️ All Features & About v30</div><div style="font-size:9px;color:var(--gold)">View complete feature list</div></div><div style="font-size:16px">→</div></div>
   </div>
 
-  <!-- GOOGLE AUTH & CLOUD BACKUP CENTER -->
+  <!-- GOOGLE AUTH & CLOUD BACKUP CENTER (+ DELETE CLOUD DATA BUTTON) -->
   <div class="glass" style="border:2px solid #4285f4;padding:14px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <div id="googleUserAvatarBox" style="width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #4285f4;flex-shrink:0">
         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.14C3.15 21.32 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.18C.43 8.15 0 9.88 0 11.76s.43 3.61 1.18 5.14l4.09-2.66z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.62l4.09 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:12px;font-weight:900">GOOGLE AUTH & CLOUD BACKUP</div>
+        <div style="font-size:12px;font-weight:900">GOOGLE CLOUD BACKUP</div>
         <div id="gmailStatus" style="font-size:9px;color:var(--muted)">Not signed in</div>
       </div>
     </div>
@@ -523,7 +550,7 @@
       </button>
 
       <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
-        <div style="font-size:8px;font-weight:800;color:var(--muted);margin-bottom:5px;text-align:center">OR DIRECT EMAIL SYNC (FALLBACK)</div>
+        <div style="font-size:8px;font-weight:800;color:var(--muted);margin-bottom:5px;text-align:center">OR DIRECT EMAIL SYNC</div>
         <div style="display:grid;grid-template-columns:1fr auto auto;gap:5px">
           <input type="email" id="gmailInput" placeholder="your@gmail.com" style="font-size:10px;padding:8px 10px">
           <button class="btn light" style="padding:8px 10px;font-size:9px" onclick="gmailBridgeLogin(true)">🔄 RESTORE</button>
@@ -537,35 +564,42 @@
         <div>
           <div id="loggedGmailName" style="font-size:12px;font-weight:900;color:var(--gold)"></div>
           <div id="loggedGmail" style="font-size:10px;font-weight:700;color:#fff"></div>
-          <div style="font-size:8px;color:#00e676;font-weight:800;margin-top:2px">● Google Cloud Real-Time Sync Active</div>
+          <div style="font-size:8px;color:#00e676;font-weight:800;margin-top:2px">● Cloud Sync Active</div>
         </div>
         <button class="btn red" style="padding:6px 10px;font-size:8px" onclick="gmailLogout()">SIGN OUT</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
         <button class="btn gold uniform-btn" onclick="cloudBackup()">☁️ BACKUP NOW</button>
-        <button class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="cloudRestore(false)">🔄 RESTORE DATA</button>
+        <button class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="cloudRestore(false)">🔄 RESTORE</button>
       </div>
+      <button class="btn red uniform-btn" style="margin-top:8px;font-size:10px" onclick="deleteCloudDataOnly()">🗑️ DELETE MY CLOUD DATA</button>
       <div id="cloudLastBackup" style="font-size:8px;color:var(--muted);text-align:center;margin-top:6px"></div>
     </div>
+  </div>
 
-    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
-      <div style="font-size:10px;font-weight:900;margin-bottom:6px">💾 LOCAL JSON FILE BACKUP</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button class="btn light uniform-btn" onclick="exportData()">📤 EXPORT JSON</button>
-        <button class="btn light uniform-btn" onclick="document.getElementById('importFile').click()">📥 IMPORT JSON</button>
-        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
-      </div>
+  <!-- CONTACT DEVELOPER SECTION -->
+  <div class="glass" style="border:1.5px solid var(--emerald);padding:14px">
+    <div style="font-size:11px;font-weight:900;color:var(--emerald);margin-bottom:8px">📞 CONTACT US & SUPPORT</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Have feedback, questions, or need support? Reach out directly:</div>
+    <div style="background:var(--pill-bg);padding:9px 11px;border-radius:12px;border:1px solid var(--border);margin-bottom:8px;font-size:11px">
+      <div style="margin-bottom:4px">📱 <b>Phone / WhatsApp:</b> <span style="color:var(--gold)">+94 78 346 9166</span></div>
+      <div>✉️ <b>Email:</b> <span style="color:var(--cyan)">nimthakalakidu12@gmail.com</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <a href="https://wa.me/94783469166" target="_blank" class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none;font-size:9px">💬 WHATSAPP</a>
+      <a href="tel:+94783469166" class="btn light uniform-btn" style="font-size:9px">📞 CALL</a>
+      <a href="mailto:nimthakalakidu12@gmail.com" class="btn gold uniform-btn" style="font-size:9px">✉️ EMAIL</a>
     </div>
   </div>
 
   <div class="glass" style="border:2px solid #ff3b30;padding:14px">
     <div style="font-size:11px;font-weight:900;color:#ff3b30;margin-bottom:6px">⚠️ RESET APPLICATION</div>
-    <button class="btn red" style="width:100%;padding:11px" onclick="resetAppCompletely()">🗑️ RESET APP TO DEFAULT</button>
+    <button class="btn red" style="width:100%;padding:11px" onclick="resetAppCompletely()">🗑️ RESET LOCAL APP TO DEFAULT</button>
   </div>
 </div>
 </div>
 
-<!-- SLEEK & COMPACT BOTTOM NAV -->
+<!-- BOTTOM NAV -->
 <div class="nav" id="mainBottomNav">
   <button id="navHome" class="active" onclick="showPage('home')">🏠 Home</button>
   <button id="navProfiles" onclick="showPage('profiles')">👤 Players</button>
@@ -575,80 +609,54 @@
   <button id="navSettings" onclick="showPage('settings')">⚙️</button>
 </div>
 
-<!-- PRE-MATCH LIVE BROADCAST PRIVACY PROMPT MODAL -->
+<!-- MODALS -->
 <div id="broadcastModePromptModal" class="modal" onclick="closeBroadcastPromptModal()">
   <div class="modal-content" style="padding:18px;padding-top:44px;text-align:center" onclick="event.stopPropagation()">
-    <button class="close-x" onclick="closeBroadcastPromptModal()" title="Back / Cancel">✕</button>
+    <button class="close-x" onclick="closeBroadcastPromptModal()">✕</button>
     <div style="font-size:30px;margin-bottom:4px">📡</div>
-    <div style="font-size:16px;font-weight:900;color:var(--gold)">GO LIVE BROADCAST?</div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:14px">Choose how spectators can watch this match live ball-by-ball:</div>
+    <div style="font-size:16px;font-weight:900;color:var(--gold);margin-bottom:14px">SELECT MATCH MODE</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn gold broadcast-choice-btn" onclick="selectPreMatchBroadcastMode('public')">
-        <span>🌐 PUBLIC LIVE BROADCAST</span>
-        <span class="choice-pill" style="background:rgba(0,0,0,0.25);color:#111">Anyone can watch</span>
-      </button>
-      <button class="btn dark broadcast-choice-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="selectPreMatchBroadcastMode('private')">
-        <span>🔒 PRIVATE LINK / QR ONLY</span>
-        <span class="choice-pill" style="background:rgba(10,132,255,0.2);color:var(--cyan)">Link/QR Only</span>
-      </button>
-      <button class="btn light broadcast-choice-btn" onclick="selectPreMatchBroadcastMode('offline')">
-        <span>📴 OFFLINE SCORING</span>
-        <span class="choice-pill" style="background:rgba(255,255,255,0.08);color:var(--muted)">Local Device</span>
-      </button>
-      <button class="btn red broadcast-choice-btn" style="justify-content:center;margin-top:4px" onclick="closeBroadcastPromptModal()">
-        ← BACK TO SETUP
-      </button>
+      <button class="btn gold broadcast-choice-btn" onclick="selectPreMatchBroadcastMode('public')"><span>🌐 PUBLIC LIVE</span><span class="choice-pill" style="background:rgba(0,0,0,0.25);color:#111">Live Hub</span></button>
+      <button class="btn dark broadcast-choice-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="selectPreMatchBroadcastMode('private')"><span>🔒 PRIVATE LINK / QR</span><span class="choice-pill" style="background:rgba(10,132,255,0.2);color:var(--cyan)">Link Only</span></button>
+      <button class="btn light broadcast-choice-btn" onclick="selectPreMatchBroadcastMode('offline')"><span>📴 OFFLINE MATCH</span><span class="choice-pill" style="background:rgba(255,255,255,0.08);color:var(--muted)">Local Only</span></button>
     </div>
   </div>
 </div>
 
-<!-- TEAM OPENERS MODAL -->
+<div id="superOverModal" class="modal" onclick="closeSuperOverModal()">
+  <div class="modal-content holo-card" style="padding:20px;padding-top:44px;text-align:center" onclick="event.stopPropagation()">
+    <button class="close-x" onclick="closeSuperOverModal()">✕</button>
+    <div style="font-size:44px">⚡</div>
+    <div id="superOverModalTitle" style="font-size:22px;font-weight:900;color:var(--gold);margin-top:4px">MATCH TIED!</div>
+    <div id="superOverModalSub" style="font-size:11px;color:var(--muted);margin:6px 0 16px">Scores are level! Start the 1-Over Super Over Eliminator!</div>
+    <button class="btn gold uniform-btn" onclick="startSuperOver()">🔥 START SUPER OVER →</button>
+  </div>
+</div>
+
 <div id="teamOpenersModal" class="modal" onclick="closeTeamOpenersModal()">
   <div class="modal-content" style="padding:18px;padding-top:44px" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeTeamOpenersModal()">✕</button>
-    <div style="font-size:15px;font-weight:900;color:var(--gold);text-align:center" id="teamOpenersTitle">🏏 SELECT OPENING PAIR & BOWLER</div>
-    <div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:12px" id="teamOpenersSub">Pick Striker, Non-Striker & Opening Bowler</div>
-    <div style="margin-bottom:10px">
-      <label style="font-size:9px;font-weight:900;color:var(--gold)">🏏 STRIKER (FACES 1ST BALL)</label>
-      <select id="openStrikerSelect" style="margin-top:4px" onchange="syncNonStrikerDropdown()"></select>
-    </div>
-    <div style="margin-bottom:10px">
-      <label style="font-size:9px;font-weight:900;color:var(--gold)">🏃 NON-STRIKER (PARTNER)</label>
-      <select id="openNonStrikerSelect" style="margin-top:4px"></select>
-    </div>
-    <div style="margin-bottom:14px">
-      <label style="font-size:9px;font-weight:900;color:var(--cyan)">🎯 OPENING BOWLER</label>
-      <select id="openBowlerSelect" style="margin-top:4px"></select>
-    </div>
+    <div style="font-size:15px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:12px" id="teamOpenersTitle">🏏 SELECT OPENERS & BOWLER</div>
+    <div style="margin-bottom:10px"><label style="font-size:9px;font-weight:900;color:var(--gold)">🏏 STRIKER</label><select id="openStrikerSelect" style="margin-top:4px" onchange="syncNonStrikerDropdown()"></select></div>
+    <div style="margin-bottom:10px"><label style="font-size:9px;font-weight:900;color:var(--gold)">🏃 NON-STRIKER</label><select id="openNonStrikerSelect" style="margin-top:4px"></select></div>
+    <div style="margin-bottom:14px"><label style="font-size:9px;font-weight:900;color:var(--cyan)">🎯 BOWLER</label><select id="openBowlerSelect" style="margin-top:4px"></select></div>
     <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px">
       <button class="btn light uniform-btn" onclick="closeTeamOpenersModal()">← BACK</button>
-      <button class="btn gold uniform-btn" onclick="confirmTeamOpeners()">⚔️ START INNINGS →</button>
+      <button class="btn gold uniform-btn" onclick="confirmTeamOpeners()">⚔️ START →</button>
     </div>
   </div>
 </div>
 
-<!-- FFA PICK MODAL -->
 <div id="ffaPickModal" class="modal" onclick="closeFFAPickModal()">
   <div class="modal-content" style="padding:18px;padding-top:44px" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeFFAPickModal()">✕</button>
-    <div style="font-size:15px;font-weight:900;color:var(--gold);text-align:center" id="ffaPickTitle">👑 SELECT NEXT BATTER & BOWLER</div>
-    <div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:12px" id="ffaPickSubtitle">Choose who bats now and who bowls</div>
-    <div style="margin-bottom:10px">
-      <label style="font-size:9px;font-weight:900;color:var(--gold)">🏏 TAP BATTER CARD (REMAINING UNBATTED)</label>
-      <div id="ffaBatterChoices" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:190px;overflow-y:auto"></div>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:9px;font-weight:900;color:var(--cyan)">🎯 SELECT OPENING BOWLER</label>
-      <select id="ffaBowlerSelect" style="margin-top:4px"></select>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px">
-      <button class="btn light uniform-btn" onclick="closeFFAPickModal()">← BACK</button>
-      <button class="btn gold uniform-btn" onclick="confirmFFANextTurn()">🏏 SEND TO CREASE →</button>
-    </div>
+    <div style="font-size:15px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:12px">👑 SELECT NEXT BATTER & BOWLER</div>
+    <div style="margin-bottom:10px"><label style="font-size:9px;font-weight:900;color:var(--gold)">🏏 TAP BATTER</label><div id="ffaBatterChoices" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:190px;overflow-y:auto"></div></div>
+    <div style="margin-bottom:12px"><label style="font-size:9px;font-weight:900;color:var(--cyan)">🎯 SELECT BOWLER</label><select id="ffaBowlerSelect" style="margin-top:4px"></select></div>
+    <button class="btn gold uniform-btn" onclick="confirmFFANextTurn()">🏏 SEND TO CREASE →</button>
   </div>
 </div>
 
-<!-- POST-MATCH CELEBRATION & MVP SUMMARY CARD MODAL -->
 <div id="postMatchSummaryModal" class="modal" onclick="closePostMatchSummaryModal()">
   <div class="modal-content holo-card" style="padding:18px;padding-top:44px" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closePostMatchSummaryModal()">✕</button>
@@ -659,7 +667,7 @@
 <div id="ffaPodiumModal" class="modal" onclick="closeFFAPodium()">
   <div class="modal-content holo-card" style="padding:18px;padding-top:46px" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeFFAPodium()">✕</button>
-    <div style="font-size:16px;font-weight:900;text-align:center;color:var(--gold)">👑 SOLO FREE-FOR-ALL FINAL STANDINGS</div>
+    <div style="font-size:16px;font-weight:900;text-align:center;color:var(--gold)">👑 SOLO FFA STANDINGS</div>
     <div id="ffaPodiumDisplay" class="podium-box"></div>
     <div id="ffaFullRankingTable" style="margin-top:10px"></div>
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" onclick="closeFFAPodium()">🏆 DONE</button>
@@ -669,62 +677,105 @@
 <div id="spectatorModal" class="modal" onclick="closeSpectatorHub()">
   <div class="modal-content" style="padding:18px;padding-top:46px" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeSpectatorHub()">✕</button>
-    <div style="font-size:16px;font-weight:900;text-align:center">📡 LIVE LINK & QR SPECTATOR HUB</div>
-    <div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:10px">Public rooms appear below • Private rooms are accessible via Link/QR only!</div>
+    <div style="font-size:16px;font-weight:900;text-align:center;margin-bottom:10px">📡 LIVE LINK & QR HUB</div>
     <div style="background:var(--pill-bg);padding:12px;border-radius:16px;border:1.5px solid var(--gold);margin-bottom:10px;text-align:center">
-      <div style="font-size:9px;font-weight:900;color:var(--gold)">YOUR LIVE BROADCAST ROOM CODE & QR</div>
+      <div style="font-size:9px;font-weight:900;color:var(--gold)">ROOM CODE & QR</div>
       <div id="hostRoomCodeDisplay" style="font-size:24px;font-weight:900;margin:2px 0;letter-spacing:3px">OFFLINE</div>
-      <div id="spectatorQRBox" class="qr-frame" style="display:none"><img id="spectatorQRImg" alt="Live Room QR"></div>
+      <div id="spectatorQRBox" class="qr-frame" style="display:none"><img id="spectatorQRImg" alt="Live QR"></div>
       <div id="spectatorDirectUrlBox" style="display:none;font-size:9px;color:var(--cyan);word-break:break-all;background:rgba(0,0,0,0.3);padding:6px;border-radius:8px;margin:6px 0"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
-        <button class="btn gold uniform-btn" onclick="startHostingRoom()">📡 GENERATE LINK + QR</button>
-        <button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareClickableSpectatorLink()">📲 WHATSAPP LINK</button>
+        <button class="btn gold uniform-btn" onclick="startHostingRoom()">📡 GENERATE QR</button>
+        <button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareClickableSpectatorLink()">📲 WHATSAPP</button>
       </div>
     </div>
     <div style="background:var(--pill-bg);padding:12px;border-radius:14px;border:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:9px;font-weight:900;color:var(--cyan)">🌐 PUBLIC LIVE ROOMS</span>
-        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="loadActiveBroadcastRooms()">🔄 REFRESH</button>
+        <span style="font-size:9px;font-weight:900;color:var(--cyan)">🌐 PUBLIC ROOMS</span>
+        <button class="btn light" style="padding:3px 7px;font-size:8px" onclick="loadActiveBroadcastRooms()">🔄</button>
       </div>
       <div id="activeRoomsPills" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px"></div>
       <div style="display:flex;gap:6px">
         <input type="text" id="joinRoomCodeInput" placeholder="Enter Room Code">
-        <button class="btn dark" onclick="joinSpectatorRoom()">👁️ WATCH</button>
-        <button class="btn gold" onclick="openFullSpectatorScreen(document.getElementById('joinRoomCodeInput').value, false)">📺 FULL TV</button>
+        <button class="btn gold" onclick="joinSpectatorRoom()">📺 WATCH</button>
       </div>
     </div>
-    <button class="btn light uniform-btn" style="width:100%;margin-top:10px" onclick="closeSpectatorHub()">← BACK</button>
   </div>
 </div>
 
 <div id="playerDetailModal" class="modal" onclick="closePlayerDetail()"><div class="modal-content holo-card" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closePlayerDetail()">✕</button><div id="playerDetailContent"></div></div></div>
 <div id="scorecardModal" class="modal" onclick="closeScorecard()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeScorecard()">✕</button><div id="scorecardContent"></div></div></div>
 <div id="compareModal" class="modal" onclick="closeCompareModal()"><div class="modal-content holo-card" style="padding:16px;padding-top:44px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeCompareModal()">✕</button><div id="compareContent"></div></div></div>
-<div id="editPlayerModal" class="modal" onclick="closeEditPlayer()"><div class="modal-content" onclick="event.stopPropagation()"><button class="close-x" onclick="closeEditPlayer()">✕</button><div style="padding:16px;padding-top:48px"><div style="font-size:16px;font-weight:900">✏️ EDIT PLAYER</div><div style="display:flex;gap:8px;align-items:center;margin-top:12px"><div id="editAvatarPreview" class="avatar" style="width:60px;height:60px;font-size:24px">?</div><div style="flex:1"><button class="btn light" onclick="document.getElementById('editAvatarFile').click()" style="width:100%;padding:10px">📷 CHANGE PHOTO</button><input type="file" id="editAvatarFile" accept="image/*" style="display:none" onchange="previewEditAvatar(this)"></div></div><div style="margin-top:10px"><input type="text" id="editPName"></div><div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;font-weight:800;color:var(--muted)">JERSEY COLOR</span><input type="color" id="editCustomColor" onchange="selectEditTheme(this.value)" style="width:28px;height:24px;padding:0;border:none;background:transparent"></div><div style="margin-top:6px"><div id="editThemeSelector" style="display:flex;gap:6px;flex-wrap:wrap"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn light uniform-btn" onclick="closeEditPlayer()">CANCEL</button><button class="btn gold uniform-btn" onclick="saveEditPlayer()">SAVE</button></div></div></div></div>
-<div id="wicketModal" class="modal" onclick="closeWicketModal()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeWicketModal()">✕</button><div style="font-size:14px;font-weight:900;text-align:center">HOW OUT?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px"><button class="btn light uniform-btn" onclick="confirmWicket('Bowled')">Bowled</button><button class="btn light uniform-btn" onclick="confirmWicket('Caught')">Caught</button><button class="btn light uniform-btn" onclick="confirmWicket('LBW')">LBW</button><button class="btn light uniform-btn" onclick="confirmWicket('Run Out')">Run Out</button><button class="btn light uniform-btn" onclick="confirmWicket('Stumped')">Stumped</button><button class="btn light uniform-btn" onclick="confirmWicket('Hit Wicket')">Hit Wicket</button></div><button class="btn dark uniform-btn" style="width:100%;margin-top:8px" onclick="closeWicketModal()">← Cancel</button></div></div>
-<div id="nextBatterModal" class="modal" onclick="closeNextBatterModal()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeNextBatterModal()">✕</button><div style="font-size:14px;font-weight:900">WICKET! SELECT NEXT BATTER</div><div id="nextBatterList" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:220px;overflow-y:auto"></div><button class="btn light uniform-btn" style="width:100%;margin-top:8px" onclick="closeNextBatterModal()">← Cancel</button></div></div>
-<div id="changeBowlerModal" class="modal" onclick="closeChangeBowler()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeChangeBowler()">✕</button><div style="font-size:14px;font-weight:900">SELECT NEXT BOWLER</div><div id="nextBowlerList" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:220px;overflow-y:auto"></div><button class="btn dark uniform-btn" style="width:100%;margin-top:8px" onclick="closeChangeBowler()">← Cancel</button></div></div>
+<div id="editPlayerModal" class="modal" onclick="closeEditPlayer()"><div class="modal-content" onclick="event.stopPropagation()"><button class="close-x" onclick="closeEditPlayer()">✕</button><div style="padding:16px;padding-top:48px"><div style="font-size:16px;font-weight:900">✏️ EDIT PLAYER</div><div style="display:flex;gap:8px;align-items:center;margin-top:12px"><div id="editAvatarPreview" class="avatar" style="width:60px;height:60px;font-size:24px">?</div><div style="flex:1"><button class="btn light" onclick="document.getElementById('editAvatarFile').click()" style="width:100%;padding:10px">📷 PHOTO</button><input type="file" id="editAvatarFile" accept="image/*" style="display:none" onchange="previewEditAvatar(this)"></div></div><div style="margin-top:10px"><input type="text" id="editPName"></div><div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;font-weight:800;color:var(--muted)">JERSEY COLOR</span><input type="color" id="editCustomColor" onchange="selectEditTheme(this.value)" style="width:28px;height:24px;padding:0;border:none;background:transparent"></div><div style="margin-top:6px"><div id="editThemeSelector" style="display:flex;gap:6px;flex-wrap:wrap"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn light uniform-btn" onclick="closeEditPlayer()">CANCEL</button><button class="btn gold uniform-btn" onclick="saveEditPlayer()">SAVE</button></div></div></div></div>
+<div id="wicketModal" class="modal" onclick="closeWicketModal()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeWicketModal()">✕</button><div style="font-size:14px;font-weight:900;text-align:center">HOW OUT?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px"><button class="btn light uniform-btn" onclick="confirmWicket('Bowled')">Bowled</button><button class="btn light uniform-btn" onclick="confirmWicket('Caught')">Caught</button><button class="btn light uniform-btn" onclick="confirmWicket('LBW')">LBW</button><button class="btn light uniform-btn" onclick="confirmWicket('Run Out')">Run Out</button><button class="btn light uniform-btn" onclick="confirmWicket('Stumped')">Stumped</button><button class="btn light uniform-btn" onclick="confirmWicket('Hit Wicket')">Hit Wicket</button></div></div></div>
+<div id="nextBatterModal" class="modal" onclick="closeNextBatterModal()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeNextBatterModal()">✕</button><div style="font-size:14px;font-weight:900">SELECT NEXT BATTER</div><div id="nextBatterList" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:220px;overflow-y:auto"></div></div></div>
+<div id="changeBowlerModal" class="modal" onclick="closeChangeBowler()"><div class="modal-content" style="padding:16px;padding-top:42px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeChangeBowler()">✕</button><div style="font-size:14px;font-weight:900">SELECT NEXT BOWLER</div><div id="nextBowlerList" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:220px;overflow-y:auto"></div></div></div>
 <div id="overSummaryModal" class="modal" onclick="closeOverSummary()"><div class="modal-content" style="padding:16px;padding-top:42px;text-align:center" onclick="event.stopPropagation()"><button class="close-x" onclick="closeOverSummary()">✕</button><div id="overSummaryTitle" style="font-size:16px;font-weight:900">OVER SUMMARY</div><div id="overSummaryBalls" style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap"></div><div id="overSummaryRuns" style="font-size:14px;font-weight:900;margin-top:10px;color:var(--gold)"></div><button class="btn gold uniform-btn" style="width:100%;margin-top:12px" onclick="closeOverSummary()">Continue →</button></div></div>
+<div id="liveLinkModal" class="modal" onclick="closeLiveLink()"><div class="modal-content" style="padding:16px;padding-top:42px;text-align:center" onclick="event.stopPropagation()"><button class="close-x" onclick="closeLiveLink()">✕</button><div style="font-size:14px;font-weight:900;color:var(--gold)">📡 LIVE LINK & QR</div><div id="modalQRWrap" class="qr-frame" style="display:none"><img id="modalQRImg" alt="Live QR"></div><div id="liveLinkText" style="margin-top:10px;background:var(--pill-bg);padding:10px;border-radius:12px;font-size:11px;white-space:pre-wrap;word-break:break-word;text-align:left"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"><button class="btn gold uniform-btn" onclick="copyLiveLink()">📋 COPY</button><button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareLiveLinkWhatsApp()">📲 WHATSAPP</button></div></div></div>
+<div id="ballEditModal" class="modal" onclick="closeBallEdit()"><div class="modal-content" style="padding:16px" onclick="event.stopPropagation()"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:900">🎬 BALL TIMELINE</div><button class="btn light" onclick="closeBallEdit()">✕</button></div><div id="ballEditList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto"></div></div></div>
+<div id="liveGraphsModal" class="modal" onclick="closeLiveGraphsModal()"><div class="modal-content" style="padding:16px;padding-top:46px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeLiveGraphsModal()">✕</button><div style="font-size:15px;font-weight:900;text-align:center">📈 LIVE CHARTS</div><div style="font-size:10px;font-weight:900;margin-top:8px;color:var(--gold)">WORM COMPARISON</div><canvas id="liveWormCanvas" class="chart-canvas" width="360" height="165"></canvas><div style="font-size:10px;font-weight:900;margin-top:12px;color:var(--cyan)">MANHATTAN OVER-BY-OVER</div><canvas id="liveRunBarCanvas" class="chart-canvas" width="360" height="150"></canvas><button class="btn gold uniform-btn" style="width:100%;margin-top:12px" onclick="closeLiveGraphsModal()">BACK TO MATCH</button></div></div>
 
-<!-- Live Spectator Link + QR Modal -->
-<div id="liveLinkModal" class="modal" onclick="closeLiveLink()">
-  <div class="modal-content" style="padding:16px;padding-top:42px;text-align:center" onclick="event.stopPropagation()">
-    <button class="close-x" onclick="closeLiveLink()">✕</button>
-    <div style="font-size:14px;font-weight:900;color:var(--gold)" id="liveLinkTitle">📡 LIVE SPECTATOR LINK & QR CODE</div>
-    <div id="modalQRWrap" class="qr-frame" style="display:none"><img id="modalQRImg" alt="Live QR Code"></div>
-    <div id="liveLinkText" style="margin-top:10px;background:var(--pill-bg);padding:10px;border-radius:12px;font-size:11px;white-space:pre-wrap;word-break:break-word;text-align:left"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
-      <button class="btn gold uniform-btn" onclick="copyLiveLink()">📋 COPY LINK/TEXT</button>
-      <button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareLiveLinkWhatsApp()">📲 WHATSAPP SHARE</button>
+<!-- 9:16 Social Media Story Poster & Certificate Modal -->
+<div id="certificateModal" class="modal" style="z-index:20000" onclick="closeCertificate()">
+  <div class="modal-content" style="padding:0;overflow:hidden;max-width:360px" onclick="event.stopPropagation()">
+    <button class="close-x" onclick="closeCertificate()">✕</button>
+    <div style="padding:14px;padding-top:44px">
+      <div style="font-size:14px;font-weight:900;text-align:center;color:var(--gold);margin-bottom:8px">📸 9:16 SOCIAL STORY POSTER</div>
+      <canvas id="certificateCanvas" width="1080" height="1920" style="width:100%;max-height:58vh;object-fit:contain;border-radius:16px;border:1.5px solid var(--gold);background:#05060d;display:block;margin:0 auto"></canvas>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <button class="btn gold uniform-btn" onclick="downloadCertificate()">📥 SAVE HD STORY</button>
+        <button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareCertificateWhatsApp()">📲 SHARE STORY</button>
+      </div>
     </div>
-    <button class="btn light uniform-btn" style="width:100%;margin-top:6px" onclick="closeLiveLink()">← Close</button>
   </div>
 </div>
 
-<div id="ballEditModal" class="modal" onclick="closeBallEdit()"><div class="modal-content" style="padding:16px" onclick="event.stopPropagation()"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:900">🎬 BALL TIMELINE & UNDO</div><button class="btn light" onclick="closeBallEdit()">✕</button></div><div id="ballEditList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto"></div></div></div>
-<div id="liveGraphsModal" class="modal" onclick="closeLiveGraphsModal()"><div class="modal-content" style="padding:16px;padding-top:46px" onclick="event.stopPropagation()"><button class="close-x" onclick="closeLiveGraphsModal()">✕</button><div style="font-size:15px;font-weight:900;text-align:center">📈 LIVE WORM & MANHATTAN CHARTS</div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:8px">🟡 1st Inn vs 🔵 2nd Inn • 🔴 Wicket Dots • ⚡ 12+ Big Over</div><div style="font-size:10px;font-weight:900;margin-top:6px;color:var(--gold)">WORM COMPARISON CHART</div><canvas id="liveWormCanvas" class="chart-canvas" width="360" height="165"></canvas><div style="font-size:10px;font-weight:900;margin-top:12px;color:var(--cyan)">MANHATTAN OVER-BY-OVER RUNS</div><canvas id="liveRunBarCanvas" class="chart-canvas" width="360" height="150"></canvas><button class="btn gold uniform-btn" style="width:100%;margin-top:12px" onclick="closeLiveGraphsModal()">BACK TO LIVE MATCH</button></div></div>
-<div id="certificateModal" class="modal" style="z-index:20000" onclick="closeCertificate()"><div class="modal-content" style="padding:0;overflow:hidden" onclick="event.stopPropagation()"><button class="close-x" onclick="closeCertificate()">✕</button><div style="padding:16px;padding-top:50px"><div style="font-size:16px;font-weight:900;text-align:center">📜 MATCH CERTIFICATE & MVP STICKER</div><canvas id="certificateCanvas" width="600" height="420"></canvas><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px"><button class="btn gold uniform-btn" onclick="downloadCertificate()">📥 CERT PNG</button><button class="btn light uniform-btn" onclick="downloadMVPSticker()">🎖️ MVP BADGE</button><button class="btn dark uniform-btn" style="background:#25D366;color:#111;border:none" onclick="shareCertificateWhatsApp()">📲 WHATSAPP</button></div></div></div></div>
-<div id="aboutModal" class="modal" style="z-index:20000" onclick="closeAboutApp()"><div class="modal-content" style="padding:0" onclick="event.stopPropagation()"><button class="close-x" onclick="closeAboutApp()">✕</button><div style="padding:20px;padding-top:50px"><div style="text-align:center"><div style="width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:20px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:32px">🏏</div><h2 style="margin:12px 0 4px;font-size:20px">CRIC CLASH v30 SUPREME</h2><p style="font-size:10px;color:var(--muted)">NEXT-GEN LIQUID GLASS UI • 113 UNLOCKABLE BADGES SHOWCASE • PUBLIC/PRIVATE LIVE BROADCAST • SAFE PAUSE & RESUME SYSTEM • SLEEK COMPACT NAV • 100% BUG FREE</p></div><button class="btn gold uniform-btn" style="width:100%;margin-top:12px" onclick="closeAboutApp()">CLOSE</button></div></div></div>
+<!-- Complete Features & About Modal -->
+<div id="aboutModal" class="modal" style="z-index:20000" onclick="closeAboutApp()">
+  <div class="modal-content holo-card" style="padding:18px;padding-top:46px" onclick="event.stopPropagation()">
+    <button class="close-x" onclick="closeAboutApp()">✕</button>
+    <div style="text-align:center">
+      <div style="width:58px;height:58px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:30px">🏏</div>
+      <h2 style="margin:10px 0 2px;font-size:19px">CRIC CLASH v30 SUPREME</h2>
+      <div style="font-size:9px;color:var(--gold);font-weight:900;letter-spacing:1px;margin-bottom:12px">PRO LIQUID BROADCAST EDITION</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;padding-right:2px;font-size:10px">
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--gold)"><b>⚔️ Multi-Mode Match Engine:</b> 1v1 Clash, Asymmetrical Team vs Team (1v2, 1v3, 1v4, 1v5+), Solo Free-For-All (3-11P) & 1-Over Super Over Shootouts.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--cyan)"><b>🕸️ Pro Spider / Radar Charts:</b> 6-Axis hexagonal skill polygons (Power, Consistency, Strike Rate, Wickets, Experience & Win Impact) for every player & H2H comparison.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #00e676"><b>🤖 Live AI Win Predictor:</b> Real-time win probability percentage bar calculated dynamically after every ball.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #a855f7"><b>🏆 Auto NRR League Engine:</b> Interactive tournament fixtures with automatic Points Table & Net Run Rate (NRR) + Grand Final generator.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--gold)"><b>📸 9:16 HD Story Poster:</b> Instant 1080×1920 vertical match summary poster generator for WhatsApp Status, TikTok & Instagram Stories.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #ff2d55"><b>🔊 Pro Stadium Synthesizer & Voice:</b> 100% copyright-free Web Audio bat cracks, crowd roars, trumpets, stump shatters, 3D 4/6/OUT pop-ups & hands-free voice scoring.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--cyan)"><b>🎖️ 113 Career Badges & Live TV:</b> Unlockable milestone badges, Worm & Manhattan charts, QR Live Spectator TV & Google Cloud Backup.</div>
+    </div>
+
+    <div style="margin-top:10px;padding:9px;background:rgba(0,0,0,0.35);border-radius:12px;border:1px solid var(--border);font-size:10px;text-align:center">
+      <div style="font-size:8px;font-weight:900;color:var(--emerald);margin-bottom:3px">📞 CONTACT & SUPPORT</div>
+      <div>📱 <b>+94 78 346 9166</b> • ✉️ <b>nimthakalakidu12@gmail.com</b></div>
+    </div>
+
+    <button class="btn gold uniform-btn" style="width:100%;margin-top:10px" onclick="closeAboutApp()">✓ CLOSE</button>
+  </div>
+</div>
+
+<!-- Custom Liquid Glass Dialog & Keypad Modal -->
+<div id="customDialogModal" class="modal" style="z-index:28000" onclick="closeCustomDialog()">
+  <div class="modal-content holo-card" style="padding:20px;padding-top:44px;text-align:center;max-width:350px" onclick="event.stopPropagation()">
+    <button class="close-x" onclick="closeCustomDialog()">✕</button>
+    <div id="customDialogIcon" style="font-size:38px;margin-bottom:4px">🏏</div>
+    <div id="customDialogTitle" style="font-size:16px;font-weight:900;color:var(--gold)">CONFIRM</div>
+    <div id="customDialogMsg" style="font-size:11px;color:var(--muted);margin:6px 0 14px"></div>
+    <div id="customDialogChips" style="display:none;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px"></div>
+    <div id="customDialogInputWrap" style="display:none;margin-bottom:14px">
+      <input type="number" id="customDialogInput" style="text-align:center;font-size:18px;font-weight:900;padding:10px;border:1.5px solid var(--gold)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:8px">
+      <button class="btn light uniform-btn" onclick="closeCustomDialog()">CANCEL</button>
+      <button class="btn gold uniform-btn" id="customDialogConfirmBtn" onclick="confirmCustomDialogAction()">CONFIRM →</button>
+    </div>
+  </div>
+</div>
+
 <div id="toastContainer"></div>
 
 <script src="script.js"></script>
