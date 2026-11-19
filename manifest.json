@@ -1,15 +1,14 @@
 {
-  "name": "CRIC CLASH v30 SUPREME",
-  "short_name": "CricClash",
-  "description": "Liquid Broadcast Cricket Scoring & Tournament App",
+  "name": "CRIC CLASH",
+  "short_name": "CRIC CLASH",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#030306",
-  "theme_color": "#f5c542",
-  "orientation": "portrait",
+  "theme_color": "#030306",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3858/3858277.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
