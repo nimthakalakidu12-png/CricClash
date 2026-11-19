@@ -1,15 +1,5 @@
 /* ==========================================================================
-   CRIC CLASH v30 • SUPREME LIQUID BROADCAST EDITION (COMPLETE script.js)
-   Includes:
-   - 6-Axis Pro Spider / Radar Charts (Player Profile & Dual H2H Overlay)
-   - Delete My Cloud Data Button (Play Store Compliance)
-   - 100% Copyright-Free Pro Stadium SFX Synthesizer (Bat Crack, Crowd Roar, Trumpets, Stumps, Siren)
-   - 4 / 6 / OUT 3D Broadcast Pop-up Animations + 50/100 Bat Raise
-   - Live AI Win Predictor Bar (1st & 2nd Innings Probability)
-   - Full Auto League Engine (Playable Fixtures + Auto NRR Points Table + Knockout/Final)
-   - 9:16 HD Portrait Story Poster Generator (1080x1920)
-   - Reduced Player Profile Glow + Mobile SpeechSynthesis Unlock Fix
-   - Team vs Team (1v2, 1v3, 1v4, 1v5+ allowed, 1v1 blocked) + Custom Liquid Keypads
+   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - PART 1)
    ========================================================================== */
 
 const firebaseConfig = {
@@ -33,8 +23,12 @@ try {
     }
 } catch (e) {}
 
+const DAY_MS = 24 * 60 * 60 * 1000;
 var settings = { appTheme: 'oled', voice: true, sfx: true, autoSave: true, commTone: 'hype' };
 var APP_THEMES = ['oled', 'ipl', 'turf', 'cyber', 'crimson', 'matrix'];
+var PAGE_ORDER = ['home', 'profiles', 'leader', 'league', 'trophy', 'settings'];
+var lastPageIndex = 0;
+
 var matchHistory = [], publicFinishedMatches = [], pausedMatches = [], players = [], rivalries = {}, leagues = [];
 var totalAllTimeMatches = 0;
 var isStrictSpectatorLinkMode = false, liveBroadcastPrivacy = 'public', activePausedMatchId = null, activePublicHubTab = 'live', sharedAudioCtx = null;
@@ -113,7 +107,6 @@ function drawSpiderRadarCanvas(canvasId, datasets) {
     var labels = ['POWER', 'AVG', 'STRIKE', 'BOWL', 'EXP', 'IMPACT'];
     var totalAxes = 6;
 
-    // Draw 4 Concentric Hexagonal Web Rings
     for (var ring = 1; ring <= 4; ring++) {
         var r = (radius / 4) * ring;
         ctx.beginPath();
@@ -130,7 +123,6 @@ function drawSpiderRadarCanvas(canvasId, datasets) {
         ctx.stroke();
     }
 
-    // Draw Axis Spokes & Outer Labels
     ctx.font = '900 9px Outfit, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -151,7 +143,6 @@ function drawSpiderRadarCanvas(canvasId, datasets) {
         ctx.fillText(labels[a], lx, ly);
     }
 
-    // Draw Player Polygons
     (datasets || []).forEach(function(ds) {
         var vals = ds.values || [20, 20, 20, 20, 20, 20];
         ctx.beginPath();
@@ -426,7 +417,7 @@ function testVoiceAudio() {
     showToast('🔊 Audio & Voice Active!');
 }
 
-/* ================== 4 / 6 / OUT POP-UP ANIMATION & CONFETTI ================== */
+/* ================== ADVANCED 4 / 6 / OUT & 50–300 MILESTONE ANIMATIONS ================== */
 var eventPopupTimer = null;
 function showEventPopup(type, subText) {
     var box = document.getElementById('eventPopupBox');
@@ -436,6 +427,7 @@ function showEventPopup(type, subText) {
     var subEl = document.getElementById('eventPopupSub');
 
     box.style.display = 'none';
+    box.classList.remove('anim-four', 'anim-six', 'anim-wicket');
     void box.offsetWidth;
 
     if (type === 'four') {
@@ -443,27 +435,33 @@ function showEventPopup(type, subText) {
         titleEl.textContent = 'CRACKING FOUR!';
         titleEl.style.color = '#f5c542';
         box.style.borderColor = '#f5c542';
-        box.style.boxShadow = '0 20px 60px rgba(0,0,0,0.9), 0 0 35px rgba(245,197,66,0.45)';
+        box.style.boxShadow = '0 24px 60px rgba(0,0,0,0.92), 0 0 42px rgba(245,197,66,0.55)';
         subEl.textContent = subText || 'RACES TO THE BOUNDARY FENCE';
+        box.classList.add('anim-four');
     } else if (type === 'six') {
         iconEl.textContent = '🚀';
         titleEl.textContent = 'MASSIVE SIX!';
-        titleEl.style.color = '#a855f7';
+        titleEl.style.color = '#c084fc';
         box.style.borderColor = '#a855f7';
-        box.style.boxShadow = '0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(168,85,247,0.55)';
+        box.style.boxShadow = '0 24px 60px rgba(0,0,0,0.92), 0 0 48px rgba(168,85,247,0.65)';
         subEl.textContent = subText || 'LAUNCHED OUT OF THE STADIUM!';
+        box.classList.add('anim-six');
         launchConfetti();
     } else if (type === 'wicket') {
-        iconEl.textContent = '🎯';
+        iconEl.textContent = '💥';
         titleEl.textContent = 'OUT! WICKET!';
         titleEl.style.color = '#ff2d55';
         box.style.borderColor = '#ff2d55';
-        box.style.boxShadow = '0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255,45,85,0.55)';
-        subEl.textContent = subText || 'BIG BREAKTHROUGH!';
+        box.style.boxShadow = '0 24px 60px rgba(0,0,0,0.92), 0 0 48px rgba(255,45,85,0.65)';
+        subEl.textContent = subText || 'STUMPS SHATTERED!';
+        box.classList.add('anim-wicket');
     }
     box.style.display = 'block';
     if (eventPopupTimer) clearTimeout(eventPopupTimer);
-    eventPopupTimer = setTimeout(function() { box.style.display = 'none'; }, 1350);
+    eventPopupTimer = setTimeout(function() {
+        box.style.display = 'none';
+        box.classList.remove('anim-four', 'anim-six', 'anim-wicket');
+    }, 1550);
 }
 
 function triggerImpactEffect(type) {
@@ -477,29 +475,43 @@ function launchConfetti() {
     var ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     var pieces = [], colors = ['#f5c542', '#ff2d55', '#0a84ff', '#00e676', '#a855f7'];
-    for (var i = 0; i < 45; i++) {
-        pieces.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height, w: 6 + Math.random() * 5, h: 6 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)], vy: 4 + Math.random() * 4, vx: -2 + Math.random() * 4 });
+    for (var i = 0; i < 55; i++) {
+        pieces.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height, w: 6 + Math.random() * 5, h: 6 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)], vy: 4 + Math.random() * 4.5, vx: -2.2 + Math.random() * 4.4 });
     }
     var frames = 0;
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         pieces.forEach(function(p) { p.y += p.vy; p.x += p.vx; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.w, p.h); });
         frames++;
-        if (frames < 70) requestAnimationFrame(draw);
+        if (frames < 75) requestAnimationFrame(draw);
         else { ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = 'none'; }
     }
     draw();
 }
 
+var batRaiseTimer = null;
 function showBatRaise(runs, playerName) {
     var box = document.getElementById('batRaiseAnimBox');
     if (!box) return;
-    document.getElementById('batRaiseText').textContent = runs + ' RUNS!';
-    document.getElementById('batRaisePlayer').textContent = playerName.toUpperCase();
+    var milestoneTitles = {
+        50: '🔥 HALF CENTURY • 50!',
+        100: '💯 SENSATIONAL CENTURY • 100!',
+        150: '⚡ TITANIC 150 RUNS!',
+        200: '👑 DOUBLE CENTURY • 200!',
+        250: '🌋 MONSTER 250 RUNS!',
+        300: '🏆 TRIPLE CENTURY • 300!'
+    };
+    var label = milestoneTitles[runs] || (runs + ' RUNS!');
+    box.style.display = 'none';
+    void box.offsetWidth;
+    document.getElementById('batRaiseText').textContent = label;
+    document.getElementById('batRaisePlayer').textContent = playerName.toUpperCase() + ' RAISES THE BAT!';
     box.style.display = 'block';
     playSFX('win');
     launchConfetti();
-    setTimeout(function() { box.style.display = 'none'; }, 2600);
+    speakCommentary('What a landmark! ' + playerName + ' reaches ' + runs + ' runs!');
+    if (batRaiseTimer) clearTimeout(batRaiseTimer);
+    batRaiseTimer = setTimeout(function() { box.style.display = 'none'; }, 2800);
 }
 
 var COMMENTARY_BANK = {
@@ -570,11 +582,29 @@ function checkAndAwardBadges(pl) {
     MASTER_BADGES.forEach(function(b) { if (b.check(pl.career)) pl.career.badges.push(b.id); });
 }
 
-/* ================== PERSISTENCE ================== */
+/* ================== PERSISTENCE & 24H PAUSE AUTO-CLEANUP ================== */
+function cleanupExpiredPausedMatches() {
+    var nowMs = Date.now();
+    var beforeLen = pausedMatches.length;
+    pausedMatches = pausedMatches.filter(function(m) {
+        if (!m.pausedAt) {
+            m.pausedAt = nowMs;
+            return true;
+        }
+        var expired = (nowMs - m.pausedAt) > DAY_MS;
+        if (expired && database && m.hostRoomCode) {
+            try { database.ref('live_rooms/' + m.hostRoomCode).remove(); } catch (e) {}
+        }
+        return !expired;
+    });
+    if (pausedMatches.length !== beforeLen) saveAll(true);
+}
+
 function loadPersistentData() {
     try { var s = localStorage.getItem('cric_settings_v30'); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch (e) {}
     try { var h = localStorage.getItem('cric_clash_history_v10'); if (h) matchHistory = JSON.parse(h) || []; } catch (e) { matchHistory = []; }
     try { var pm = localStorage.getItem('cric_paused_matches_v30'); if (pm) pausedMatches = JSON.parse(pm) || []; } catch (e) { pausedMatches = []; }
+    cleanupExpiredPausedMatches();
     try {
         var savedTotal = parseInt(localStorage.getItem('cric_total_alltime_v30'));
         totalAllTimeMatches = (!isNaN(savedTotal) && savedTotal >= matchHistory.length) ? savedTotal : matchHistory.length;
@@ -616,11 +646,14 @@ function saveSettings() {
 
 window.addEventListener('beforeunload', function() {
     if (isStrictSpectatorLinkMode) return;
-    if (matchActive) saveLiveState();
+    if (matchActive) {
+        saveLiveState();
+        if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(true);
+    }
     saveAll(true);
 });
 
-/* ================== UI NAVIGATION & THEMES ================== */
+/* ================== UI NAVIGATION, SLIDE ANIMATIONS & THEMES ================== */
 function showToast(msg) {
     var container = document.getElementById('toastContainer');
     if (!container) return;
@@ -632,6 +665,13 @@ function showToast(msg) {
         t.style.opacity = '0';
         setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
     }, 2400);
+}
+
+function triggerTabSlideAnim(el) {
+    if (!el) return;
+    el.classList.remove('tab-slide-anim');
+    void el.offsetWidth;
+    el.classList.add('tab-slide-anim');
 }
 
 function toggleCustomOversInput(selectId, inputId) {
@@ -651,9 +691,19 @@ function getResolvedOversValue(selectId, inputId) {
 }
 
 function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    var nextIdx = PAGE_ORDER.indexOf(pageId);
+    var isGoingLeft = (nextIdx !== -1 && nextIdx < lastPageIndex);
+    if (nextIdx !== -1) lastPageIndex = nextIdx;
+
+    document.querySelectorAll('.page').forEach(function(p) {
+        p.classList.remove('active', 'slide-left');
+    });
     var target = document.getElementById(pageId + 'Page');
-    if (target) target.classList.add('active');
+    if (target) {
+        void target.offsetWidth;
+        if (isGoingLeft) target.classList.add('slide-left');
+        target.classList.add('active');
+    }
 
     document.querySelectorAll('#mainBottomNav button').forEach(function(b) { b.classList.remove('active'); });
     var activeNav = document.getElementById('nav' + pageId.charAt(0).toUpperCase() + pageId.slice(1));
@@ -708,8 +758,14 @@ function switchPublicHubTab(tab) {
     var liveBox = document.getElementById('publicHubLiveContent'), histBox = document.getElementById('publicHubHistoryContent');
     if (btnLive) btnLive.classList.toggle('active', tab === 'live');
     if (btnHist) btnHist.classList.toggle('active', tab === 'history');
-    if (liveBox) liveBox.style.display = (tab === 'live') ? 'block' : 'none';
-    if (histBox) histBox.style.display = (tab === 'history') ? 'block' : 'none';
+    if (liveBox) {
+        liveBox.style.display = (tab === 'live') ? 'block' : 'none';
+        if (tab === 'live') triggerTabSlideAnim(liveBox);
+    }
+    if (histBox) {
+        histBox.style.display = (tab === 'history') ? 'block' : 'none';
+        if (tab === 'history') triggerTabSlideAnim(histBox);
+    }
     refreshPublicHubFeed();
 }
 
@@ -721,7 +777,7 @@ function refreshPublicHubFeed() {
         histBox.innerHTML = '<div style="font-size:10px;color:var(--muted);text-align:center;padding:8px">📴 Offline Mode</div>';
         return;
     }
-    var nowMs = Date.now(), DAY_MS = 24 * 60 * 60 * 1000;
+    var nowMs = Date.now();
     database.ref('live_rooms').limitToLast(25).once('value', function(snap) {
         var val = snap.val(), publicRooms = [];
         if (val) {
@@ -729,12 +785,17 @@ function refreshPublicHubFeed() {
                 var r = val[k];
                 if (!r) return;
                 var code = r.roomCode || k, tA = r.teamA || '', tB = r.teamB || '';
-                if (!tA || !tB || tA === 'undefined' || tB === 'undefined' || code === 'undefined' || !r.updatedAt || (nowMs - r.updatedAt) > DAY_MS || r.ended) {
+                var refTime = r.pausedAt || r.updatedAt || 0;
+                if (!tA || !tB || tA === 'undefined' || tB === 'undefined' || code === 'undefined' || !refTime || (nowMs - refTime) > DAY_MS || r.ended || r.aborted) {
                     try { database.ref('live_rooms/' + k).remove(); } catch (e) {}
                     return;
                 }
                 if (r.privacy === 'public') {
-                    publicRooms.push({ roomCode: code, teamA: tA, teamB: tB, battingTeam: r.battingTeam || tA, score: r.score || '0/0', overs: r.overs || '0.0' });
+                    publicRooms.push({
+                        roomCode: code, teamA: tA, teamB: tB, battingTeam: r.battingTeam || tA,
+                        score: r.score || '0/0', overs: r.overs || '0.0', striker: r.striker || '',
+                        bowler: r.bowler || '', paused: !!r.paused
+                    });
                 }
             });
         }
@@ -742,10 +803,12 @@ function refreshPublicHubFeed() {
             liveBox.innerHTML = '<div style="font-size:10px;color:var(--muted);text-align:center;padding:8px">No active public matches right now.</div>';
         } else {
             liveBox.innerHTML = publicRooms.reverse().map(function(r) {
-                return '<div style="padding:8px 10px;background:var(--pill-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">' +
-                    '<div><div style="font-size:11px;font-weight:900;color:var(--gold)">🔴 #' + r.roomCode + ' • ' + r.teamA + ' vs ' + r.teamB + '</div>' +
-                    '<div style="font-size:10px;color:#fff;font-weight:800">' + r.battingTeam + ': ' + r.score + ' (' + r.overs + ' ov)</div></div>' +
-                    '<button class="btn gold" style="padding:5px 9px;font-size:9px" onclick="openFullSpectatorScreen(\'' + r.roomCode + '\', false)">📺 WATCH</button></div>';
+                var statusTag = r.paused ? '<span class="badge gold" style="font-size:7px;margin-left:4px">⏸️ PAUSED</span>' : '<span class="badge dark" style="font-size:7px;color:#00e676;border-color:#00e676;margin-left:4px">● LIVE</span>';
+                return '<div style="padding:9px 10px;background:var(--pill-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">' +
+                    '<div><div style="font-size:11px;font-weight:900;color:var(--gold)">🔴 #' + r.roomCode + ' • ' + r.teamA + ' vs ' + r.teamB + statusTag + '</div>' +
+                    '<div style="font-size:10px;color:#fff;font-weight:800;margin-top:2px">' + r.battingTeam + ': ' + r.score + ' (' + r.overs + ' ov)</div>' +
+                    (r.striker ? '<div style="font-size:8px;color:var(--muted);margin-top:2px">🏏 ' + r.striker + (r.bowler ? ' • 🎯 ' + r.bowler : '') + '</div>' : '') + '</div>' +
+                    '<button class="btn gold" style="padding:6px 10px;font-size:9px" onclick="openFullSpectatorScreen(\'' + r.roomCode + '\', false)">📺 WATCH</button></div>';
             }).join('');
         }
     });
@@ -779,7 +842,7 @@ function openPublicHistoryScorecard(idx) {
     if (m) renderScorecardModalFromRecord(m);
 }
 
-/* ================== PLAYER ROSTER & PROFILES (WITH PRO RADAR CHART) ================== */
+/* ================== PLAYER ROSTER & PROFILES ================== */
 function renderThemeChips(containerId, activeColor, callbackName) {
     var el = document.getElementById(containerId);
     if (!el) return;
@@ -926,7 +989,6 @@ function openPlayerDetail(idx) {
         '<div style="font-size:9px;color:var(--muted);margin-top:3px">🏟️ M: <b>' + (c.matches || 0) + '</b> • 🏆 Wins: <b>' + (c.wins || 0) + '</b> • 🔥 Max Streak: <b>' + (c.maxStreak || 0) + '</b></div>' +
         '<div style="margin-top:5px;display:flex;gap:4px;align-items:center"><span style="font-size:8px;color:var(--muted);font-weight:900">FORM:</span> ' + formHtml + '</div></div></div>' +
 
-        /* 6-Axis Pro Spider / Radar Chart Box */
         '<div style="margin-top:10px;background:rgba(0,0,0,0.32);border:1px solid var(--border);border-radius:16px;padding:8px;text-align:center">' +
         '<div style="font-size:8px;font-weight:900;color:var(--gold);letter-spacing:1px">🕸️ 6-AXIS PRO SKILL RADAR</div>' +
         '<canvas id="playerDetailRadarCanvas" width="260" height="205" style="max-width:100%;display:block;margin:0 auto"></canvas></div>' +
@@ -1189,7 +1251,11 @@ function selectPreMatchBroadcastMode(privacy) {
     var shareWrap = document.getElementById('shareLiveBtnWrap');
     if (shareWrap) shareWrap.style.display = (privacy === 'offline') ? 'none' : 'grid';
 
-    if (privacy !== 'offline') startHostingRoom(true);
+    if (privacy !== 'offline') {
+        hostRoomCode = String(Math.floor(1000 + Math.random() * 9000));
+        localStorage.setItem('cric_host_room', hostRoomCode);
+        startHostingRoom(true);
+    }
     if (matchMode === '1v1') initMatchEngine(teamA, teamB, 0, -1, 0);
     else if (matchMode === 'team') openTeamOpenersModal(teamA, teamB);
     else if (matchMode === 'ffa') { ffaTurnNumber = 0; openFFAPickModal(); }
@@ -1220,7 +1286,7 @@ function confirmTeamOpeners() {
     if (sIdx === nsIdx && nsIdx !== -1) return showToast('⚠️ Striker & Non-Striker cannot be same!');
     closeTeamOpenersModal();
     if (!isSecondInnings) initMatchEngine(battingTeam, bowlingTeam, sIdx, nsIdx, bIdx);
-    else { cur = sIdx; nonStriker = nsIdx; curBowler = bIdx; updateMatchUI(); }
+    else { cur = sIdx; nonStriker = nsIdx; curBowler = bIdx; updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
 }
 
 function openFFAPickModal() {
@@ -1251,7 +1317,7 @@ function confirmFFANextTurn() {
     closeFFAPickModal();
     ffaCurrentBatterIdx = ffaPickedBatterTemp;
     if (ffaTurnNumber === 0) initMatchEngine(ffaPlayers, ffaPlayers, ffaCurrentBatterIdx, -1, bIdx);
-    else { cur = ffaCurrentBatterIdx; curBowler = bIdx; currOver = []; overRuns = 0; overWktsCount = 0; partnershipRuns = 0; partnershipBalls = 0; widesCount = 0; noBallsCount = 0; isFreeHit = false; updateMatchUI(); }
+    else { cur = ffaCurrentBatterIdx; curBowler = bIdx; currOver = []; overRuns = 0; overWktsCount = 0; partnershipRuns = 0; partnershipBalls = 0; widesCount = 0; noBallsCount = 0; isFreeHit = false; updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
     ffaTurnNumber++;
 }
 
@@ -1259,7 +1325,9 @@ function initMatchEngine(batSq, bowlSq, strikerIdx, nonStrikerIdx, bowlerIdx) {
     battingTeam = batSq; bowlingTeam = bowlSq; cur = strikerIdx; nonStriker = nonStrikerIdx; curBowler = bowlerIdx;
     currOver = []; allBalls = []; overByOver = []; overWickets = []; fowList = []; partnershipRuns = 0; partnershipBalls = 0;
     innings1 = null; isSecondInnings = false; targetToWin = 0; isFreeHit = false; wicketsDown = 0; overRuns = 0; overWktsCount = 0; widesCount = 0; noBallsCount = 0; undoStack = []; matchActive = true; activePausedMatchId = null;
-    showPage('match'); updateMatchUI(); speakCommentary(pickRandomCommentary('start'));
+    showPage('match'); updateMatchUI();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+    speakCommentary(pickRandomCommentary('start'));
 }
 
 function getTotalRuns() {
@@ -1300,6 +1368,7 @@ function undo() {
     if (fhBadge) fhBadge.style.display = isFreeHit ? 'inline-block' : 'none';
 
     updateMatchUI();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
     showToast('↩️ Last ball undone');
 }
 
@@ -1318,15 +1387,23 @@ function score(runs) {
     currOver.push(label);
     allBalls.push({ label: label, runs: runs, legal: true, wicket: false, batter: batter.name, bowler: bowler.name, over: formatOvers(getLegalBallsCount()) });
 
-    var hitMilestone = (prevRuns < 50 && batter.runs >= 50) || (prevRuns < 100 && batter.runs >= 100);
+    var milestones = [50, 100, 150, 200, 250, 300];
+    var crossedMilestone = 0;
+    for (var mIdx = 0; mIdx < milestones.length; mIdx++) {
+        if (prevRuns < milestones[mIdx] && batter.runs >= milestones[mIdx]) {
+            crossedMilestone = milestones[mIdx];
+        }
+    }
 
-    if (runs === 4) {
+    if (crossedMilestone > 0) {
+        showBatRaise(crossedMilestone, batter.name);
+    } else if (runs === 4) {
         playSFX('four');
-        if (!hitMilestone) showEventPopup('four', batter.name.toUpperCase() + ' • ' + batter.runs + '(' + batter.balls + ')');
+        showEventPopup('four', batter.name.toUpperCase() + ' • ' + batter.runs + '(' + batter.balls + ')');
         speakCommentary(pickRandomCommentary('four'));
     } else if (runs === 6) {
         playSFX('six');
-        if (!hitMilestone) showEventPopup('six', batter.name.toUpperCase() + ' • ' + batter.runs + '(' + batter.balls + ')');
+        showEventPopup('six', batter.name.toUpperCase() + ' • ' + batter.runs + '(' + batter.balls + ')');
         speakCommentary(pickRandomCommentary('six'));
     } else if (runs === 0) {
         playSFX('dot'); speakCommentary(pickRandomCommentary('dot'));
@@ -1337,9 +1414,6 @@ function score(runs) {
     } else {
         playSFX('dot'); speakCommentary(pickRandomCommentary('three'));
     }
-
-    if (prevRuns < 50 && batter.runs >= 50) showBatRaise(50, batter.name);
-    if (prevRuns < 100 && batter.runs >= 100) showBatRaise(100, batter.name);
 
     if (runs % 2 === 1 && nonStriker !== -1) swapStrikeInternal();
     checkPostBallProgress();
@@ -1399,7 +1473,7 @@ function confirmWicket(howOut) {
     if (matchMode === 'ffa') {
         var remainingFFA = ffaPlayers.filter(function(p) { return !p.out; });
         if (remainingFFA.length === 0) finishFFAMatch();
-        else { updateMatchUI(); openFFAPickModal(); }
+        else { updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); openFFAPickModal(); }
         return;
     }
 
@@ -1421,7 +1495,7 @@ function confirmWicket(howOut) {
 
 function selectNextBatter(idx) { closeNextBatterModal(); cur = idx; partnershipRuns = 0; partnershipBalls = 0; checkPostBallProgress(); }
 function swapStrikeInternal() { if (nonStriker === -1) return; var tmp = cur; cur = nonStriker; nonStriker = tmp; }
-function switchStrikeBtn() { if (nonStriker === -1) return showToast('⚠️ Solo batter'); swapStrikeInternal(); updateMatchUI(); }
+function switchStrikeBtn() { if (nonStriker === -1) return showToast('⚠️ Solo batter'); swapStrikeInternal(); updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
 function quickSwapRoles() { if (matchMode === '1v1') endCurrentInnings(); }
 
 function checkPostBallProgress(isExtra) {
@@ -1447,7 +1521,7 @@ function checkPostBallProgress(isExtra) {
         currOver = []; overRuns = 0; overWktsCount = 0;
     }
     updateMatchUI();
-    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
 }
 
 function closeOverSummary() { document.getElementById('overSummaryModal').classList.remove('open'); if (bowlingTeam.length > 1) openChangeBowler(); }
@@ -1459,12 +1533,13 @@ function openChangeBowler() {
     document.getElementById('changeBowlerModal').classList.add('open');
 }
 function closeChangeBowler() { document.getElementById('changeBowlerModal').classList.remove('open'); }
-function selectBowler(idx) { curBowler = idx; closeChangeBowler(); updateMatchUI(); }
+function selectBowler(idx) { curBowler = idx; closeChangeBowler(); updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
 function quickNextBowler() {
     if (bowlingTeam.length <= 1) return showToast('⚠️ Only 1 bowler');
     curBowler = (curBowler + 1) % bowlingTeam.length;
     if (matchMode === 'ffa' && curBowler === cur) curBowler = (curBowler + 1) % bowlingTeam.length;
     updateMatchUI();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
 }
 
 function endCurrentInnings() {
@@ -1474,7 +1549,7 @@ function endCurrentInnings() {
         innings1 = { teamName: teamAName, runs: getTotalRuns(), wickets: wicketsDown, overs: formatOvers(getLegalBallsCount()), balls: getLegalBallsCount(), extras: (widesCount + noBallsCount), fow: fowList.slice(), batting: JSON.parse(JSON.stringify(battingTeam)), bowling: JSON.parse(JSON.stringify(bowlingTeam)), overByOver: inn1History, overWickets: inn1WktHist };
         targetToWin = innings1.runs + 1; isSecondInnings = true; wicketsDown = 0; currOver = []; allBalls = []; overByOver = []; overWickets = []; fowList = []; partnershipRuns = 0; partnershipBalls = 0; overRuns = 0; overWktsCount = 0; widesCount = 0; noBallsCount = 0; isFreeHit = false; undoStack = [];
         showToast('🏏 Target: ' + targetToWin); speakCommentary(pickRandomCommentary('inningsBreak'));
-        if (matchMode === '1v1') { battingTeam = teamB; bowlingTeam = teamA; cur = 0; nonStriker = -1; curBowler = 0; updateMatchUI(); }
+        if (matchMode === '1v1') { battingTeam = teamB; bowlingTeam = teamA; cur = 0; nonStriker = -1; curBowler = 0; updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
         else openTeamOpenersModal(teamB, teamA);
     } else finishFullMatch();
 }
@@ -1560,8 +1635,11 @@ function finishFullMatch() {
         activeLeagueMatchMeta = null;
     }
 
-    if (database && liveBroadcastPrivacy === 'public') {
-        try { database.ref('public_finished_matches').push(record); if (hostRoomCode) database.ref('live_rooms/' + hostRoomCode).remove(); } catch (e) {}
+    if (database && liveBroadcastPrivacy !== 'offline') {
+        try {
+            if (liveBroadcastPrivacy === 'public') database.ref('public_finished_matches').push(record);
+            if (hostRoomCode) database.ref('live_rooms/' + hostRoomCode).remove();
+        } catch (e) {}
     }
     saveAll(); playSFX('win'); triggerImpactEffect('win'); speakCommentary(pickRandomCommentary('finish'));
     showPage('home'); openPostMatchSummaryModal(0);
@@ -1604,7 +1682,12 @@ function finishFFAMatch() {
     rec.mvp = computeMatchMVP(rec);
     matchHistory.unshift(rec); totalAllTimeMatches++;
     applyMatchCareerDelta(rec, 1);
-    if (database && liveBroadcastPrivacy === 'public') { try { database.ref('public_finished_matches').push(rec); } catch (e) {} }
+    if (database && liveBroadcastPrivacy !== 'offline') {
+        try {
+            if (liveBroadcastPrivacy === 'public') database.ref('public_finished_matches').push(rec);
+            if (hostRoomCode) database.ref('live_rooms/' + hostRoomCode).remove();
+        } catch (e) {}
+    }
     saveAll(); playSFX('win'); triggerImpactEffect('win');
     document.getElementById('ffaPodiumDisplay').innerHTML = sorted.slice(0, 3).map(function(p, i) { return '<div class="stat-pill" style="margin-bottom:4px"><b>#' + (i + 1) + ' ' + p.name + '</b> — ' + p.runs + ' (' + p.balls + ')</div>'; }).join('');
     document.getElementById('ffaFullRankingTable').innerHTML = sorted.map(function(p, i) { return '<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid var(--border);font-size:11px"><span>#' + (i + 1) + ' ' + p.name + '</span><b>' + p.runs + ' runs (' + p.wicketsTaken + ' wkts)</b></div>'; }).join('');
@@ -1655,8 +1738,7 @@ function applyMatchCareerDelta(rec, sign) {
         }
     });
 }
-
-/* ================== LIVE UI, AI WIN PREDICTOR & CHARTS ================== */
+/* ================== LIVE UI, AI WIN PREDICTOR & CHARTS (PART 2) ================== */
 function updateLiveWinPredictor(totalRuns, legalBalls) {
     var box = document.getElementById('winPredictorBox');
     if (!box) return;
@@ -1835,11 +1917,15 @@ function renderBallTimelineFeed() {
     }).join('');
 }
 
-/* ================== PAUSE / RESUME & ARCHIVE ================== */
+/* ================== PAUSE / RESUME (24H EXPIRY) & ABORT ================== */
 function saveLiveState() {
     if (!matchActive) return;
     var stateObj = {
-        id: activePausedMatchId || ('pm_' + Date.now()), savedAt: new Date().toLocaleTimeString(),
+        id: activePausedMatchId || ('pm_' + Date.now()),
+        savedAt: new Date().toLocaleTimeString(),
+        pausedAt: Date.now(),
+        hostRoomCode: hostRoomCode,
+        liveBroadcastPrivacy: liveBroadcastPrivacy,
         matchMode: matchMode, teamWicketRule: teamWicketRule, teamAName: teamAName, teamBName: teamBName,
         teamA: teamA, teamB: teamB, ffaPlayers: ffaPlayers, battingTeam: battingTeam, bowlingTeam: bowlingTeam,
         cur: cur, nonStriker: nonStriker, curBowler: curBowler, currOver: currOver, allBalls: allBalls,
@@ -1856,14 +1942,20 @@ function saveLiveState() {
 }
 
 function pauseAndExitToHome() {
-    saveLiveState(); matchActive = false;
-    showToast('⏸️ Match Paused & Saved!'); showPage('home');
+    saveLiveState();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(true);
+    matchActive = false;
+    showToast('⏸️ Match Paused! (Auto-clears after 24h)');
+    showPage('home');
 }
 
 function resumePausedMatch(id) {
     var m = pausedMatches.find(function(x) { return x.id === id; });
     if (!m) return;
-    activePausedMatchId = m.id; matchMode = m.matchMode; teamWicketRule = m.teamWicketRule || 'all_out';
+    activePausedMatchId = m.id;
+    hostRoomCode = m.hostRoomCode || hostRoomCode;
+    liveBroadcastPrivacy = m.liveBroadcastPrivacy || 'offline';
+    matchMode = m.matchMode; teamWicketRule = m.teamWicketRule || 'all_out';
     teamAName = m.teamAName; teamBName = m.teamBName; teamA = m.teamA || []; teamB = m.teamB || []; ffaPlayers = m.ffaPlayers || [];
     battingTeam = m.battingTeam; bowlingTeam = m.bowlingTeam; cur = m.cur; nonStriker = m.nonStriker; curBowler = m.curBowler;
     currOver = m.currOver || []; allBalls = m.allBalls || []; overByOver = m.overByOver || []; overWickets = m.overWickets || [];
@@ -1872,21 +1964,28 @@ function resumePausedMatch(id) {
     innings1 = m.innings1; isSecondInnings = m.isSecondInnings; targetToWin = m.targetToWin; maxOvers = m.maxOvers;
     wicketsDown = m.wicketsDown; widesCount = m.widesCount || 0; noBallsCount = m.noBallsCount || 0; matchActive = true;
     pausedMatches = pausedMatches.filter(function(x) { return x.id !== id; });
-    saveAll(true); showPage('match'); updateMatchUI(); showToast('▶️ Resumed!');
+    saveAll(true); showPage('match'); updateMatchUI();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+    showToast('▶️ Match Resumed!');
 }
 
 function deletePausedMatch(id) {
+    var m = pausedMatches.find(function(x) { return x.id === id; });
+    if (m && database && m.hostRoomCode) {
+        try { database.ref('live_rooms/' + m.hostRoomCode).remove(); } catch (e) {}
+    }
     pausedMatches = pausedMatches.filter(function(x) { return x.id !== id; });
-    saveAll(true); renderPausedMatches();
+    saveAll(true); renderPausedMatches(); refreshPublicHubFeed();
 }
 
 function renderPausedMatches() {
+    cleanupExpiredPausedMatches();
     var box = document.getElementById('pausedMatchesContainer');
     if (!box) return;
     if (!pausedMatches.length) { box.innerHTML = ''; return; }
     box.innerHTML = pausedMatches.map(function(m) {
         return '<div style="margin-top:8px;padding:10px;background:rgba(245,197,66,0.12);border:1px solid var(--gold);border-radius:12px;display:flex;justify-content:space-between;align-items:center">' +
-            '<div><div style="font-size:10px;font-weight:900;color:var(--gold)">⏸️ PAUSED: ' + m.teamAName + ' vs ' + m.teamBName + '</div><div style="font-size:9px;color:var(--muted)">Saved at ' + m.savedAt + '</div></div>' +
+            '<div><div style="font-size:10px;font-weight:900;color:var(--gold)">⏸️ PAUSED: ' + m.teamAName + ' vs ' + m.teamBName + '</div><div style="font-size:9px;color:var(--muted)">Saved at ' + m.savedAt + ' (24h auto-expire)</div></div>' +
             '<div style="display:flex;gap:4px"><button class="btn gold" style="padding:6px 10px;font-size:9px" onclick="resumePausedMatch(\'' + m.id + '\')">▶️ RESUME</button>' +
             '<button class="btn red" style="padding:6px 8px;font-size:9px" onclick="deletePausedMatch(\'' + m.id + '\')">✕</button></div></div>';
     }).join('');
@@ -1965,12 +2064,23 @@ function renderScorecardModalFromRecord(m) {
 function closeScorecard() { document.getElementById('scorecardModal').classList.remove('open'); }
 
 function confirmAbandonMatch() {
-    openCustomConfirm('🗑️', 'ABORT MATCH?', 'Abort current live match without saving?', 'ABORT MATCH', function() {
-        matchActive = false; activeLeagueMatchMeta = null; showPage('home'); showToast('🗑️ Match aborted');
+    openCustomConfirm('🗑️', 'ABORT MATCH?', 'Abort current live match and remove it from Live Hub?', 'ABORT MATCH', function() {
+        matchActive = false;
+        activeLeagueMatchMeta = null;
+        if (database && hostRoomCode) {
+            try { database.ref('live_rooms/' + hostRoomCode).remove(); } catch (e) {}
+        }
+        if (activePausedMatchId) {
+            pausedMatches = pausedMatches.filter(function(x) { return x.id !== activePausedMatchId; });
+            activePausedMatchId = null;
+            saveAll(true);
+        }
+        showPage('home');
+        showToast('🗑️ Match aborted & removed from Live Hub');
     });
 }
 
-/* ================== LEADERBOARD, H2H (WITH DUAL RADAR OVERLAY) & TROPHIES ================== */
+/* ================== LEADERBOARD, H2H & TROPHIES ================== */
 function getPlayerMetric(p, key) {
     var c = p.career || {};
     if (key === 'avg') return c.matches ? parseFloat((c.runs / c.matches).toFixed(1)) : 0;
@@ -1993,6 +2103,7 @@ function renderLeader(statKey) {
             '<div><div style="font-size:11px;font-weight:900;color:' + safeCol + '">' + p.name + cap + '</div><div style="font-size:8px;color:var(--muted)">M:' + (c.matches || 0) + ' • AVG:' + avg + ' • SR:' + sr + '</div></div></div>' +
             '<b style="color:var(--gold);font-size:14px">' + val + '</b></div>';
     }).join('');
+    triggerTabSlideAnim(list);
 }
 
 function openCompareModal() {
@@ -2034,7 +2145,6 @@ function renderCompareModalContent() {
         '<div style="font-size:14px;font-weight:900;color:var(--gold)">VS</div>' +
         '<div style="text-align:center"><div style="display:flex;justify-content:center;margin-bottom:5px">' + getAvatarHTML(pB, 46, 16) + '</div><select onchange="updateH2HSelection(\'B\',this.value)">' + optsB + '</select><div style="font-size:9px;color:var(--cyan);font-weight:900;margin-top:3px">OVR ' + radB.ovr + '</div></div></div>' +
 
-        /* Dual Overlaid Spider Radar Chart */
         '<div style="background:rgba(0,0,0,0.34);border:1px solid var(--border);border-radius:16px;padding:8px;margin-bottom:10px;text-align:center">' +
         '<div style="font-size:8px;font-weight:900;color:var(--muted);margin-bottom:2px"><span style="color:var(--gold)">■ ' + pA.name.toUpperCase() + '</span> vs <span style="color:var(--cyan)">■ ' + pB.name.toUpperCase() + '</span></div>' +
         '<canvas id="h2hRadarCanvas" width="260" height="200" style="max-width:100%;display:block;margin:0 auto"></canvas></div>' +
@@ -2088,9 +2198,10 @@ function renderTrophiesTab(tab) {
             }).join('');
         }
     }
+    triggerTabSlideAnim(grid);
 }
 
-/* ================== PRO AUTO LEAGUE ENGINE (NRR POINTS TABLE + PLAYABLE FIXTURES) ================== */
+/* ================== PRO AUTO LEAGUE ENGINE ================== */
 function ensureLeagueStructure(lg) {
     if (!lg) return;
     if (!lg.standings) {
@@ -2132,7 +2243,10 @@ function toggleLeaguePickCard(idx) {
 
 function createLeague() {
     var name = document.getElementById('leagueNameInput').value.trim();
-    var picked = Array.from(document.querySelectorAll('.league-cb:checked')).map(function(cb) { return players[parseInt(cb.value)].name; });
+    var picked = Array.from(document.querySelectorAll('.league-cb:checked')).map(function(cb) {
+        var idx = parseInt(cb.value);
+        return players[idx] ? players[idx].name : null;
+    }).filter(Boolean);
     if (!name) return showToast('⚠️ Enter tournament name');
     if (picked.length < 3) return showToast('⚠️ Pick at least 3 players');
     var resolvedOvers = getResolvedOversValue('leagueOvers', 'customLeagueOversInput');
@@ -2336,7 +2450,7 @@ function openCertificateModal(idx) {
     ctx.fillStyle = '#f5c542';
     ctx.font = '900 26px Outfit, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('⚡ CRIC CLASH v30 • OFFICIAL STORY', 540, 158);
+    ctx.fillText('⚡ CRIC CLASH • OFFICIAL STORY', 540, 158);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 68px "Space Grotesk", sans-serif';
@@ -2420,7 +2534,7 @@ function openCertificateModal(idx) {
 
     ctx.fillStyle = '#f5c542';
     ctx.font = '900 28px "Space Grotesk", sans-serif';
-    ctx.fillText('CRIC CLASH v30 • SUPREME LIQUID BROADCAST', 540, 1810);
+    ctx.fillText('CRIC CLASH • OFFICIAL MATCH SUMMARY', 540, 1810);
 
     document.getElementById('certificateModal').classList.add('open');
 }
@@ -2449,7 +2563,7 @@ function shareCertificateWhatsApp() {
     }
 }
 
-/* ================== LIVE SPECTATOR, QR, AUTH, DELETE CLOUD DATA & PWA ================== */
+/* ================== FULL LIVE SPECTATOR TV, QR, AUTH & DELETE CLOUD DATA ================== */
 function openSpectatorHub() { document.getElementById('spectatorModal').classList.add('open'); loadActiveBroadcastRooms(); }
 function closeSpectatorHub() { document.getElementById('spectatorModal').classList.remove('open'); }
 
@@ -2462,21 +2576,38 @@ function startHostingRoom(silent) {
     var urlBox = document.getElementById('spectatorDirectUrlBox'), qrBox = document.getElementById('spectatorQRBox'), qrImg = document.getElementById('spectatorQRImg');
     if (urlBox) { urlBox.style.display = 'block'; urlBox.textContent = shareUrl; }
     if (qrBox && qrImg) { qrBox.style.display = 'inline-block'; qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareUrl); }
-    pushLiveRoomUpdate();
+    pushLiveRoomUpdate(false);
     if (!silent) showToast('📡 Room #' + hostRoomCode + ' Ready!');
 }
 
-function pushLiveRoomUpdate() {
+function pushLiveRoomUpdate(isPaused) {
     if (!database || !hostRoomCode || liveBroadcastPrivacy === 'offline') return;
     if (!teamAName || !teamBName || teamAName === 'undefined') return;
+    var totalRuns = getTotalRuns(), legalBalls = getLegalBallsCount();
+    var crr = legalBalls > 0 ? ((totalRuns / legalBalls) * 6).toFixed(2) : '0.00';
+    var targetInfo = (isSecondInnings && matchMode !== 'ffa') ? ('Target: ' + targetToWin + ' • Need ' + Math.max(0, targetToWin - totalRuns)) : ('CRR: ' + crr);
+    var nsObj = (nonStriker !== -1 && battingTeam[nonStriker]) ? battingTeam[nonStriker] : null;
     try {
         database.ref('live_rooms/' + hostRoomCode).set({
-            roomCode: hostRoomCode, privacy: liveBroadcastPrivacy, ended: !matchActive,
-            teamA: teamAName, teamB: teamBName, battingTeam: isSecondInnings ? teamBName : teamAName,
-            score: getTotalRuns() + '/' + wicketsDown, overs: formatOvers(getLegalBallsCount()) + '/' + (maxOvers === 999 ? '∞' : maxOvers),
-            striker: battingTeam[cur] ? battingTeam[cur].name + ' ' + battingTeam[cur].runs + '(' + battingTeam[cur].balls + ')' : '',
-            bowler: bowlingTeam[curBowler] ? bowlingTeam[curBowler].name + ' ' + bowlingTeam[curBowler].wicketsTaken + '-' + bowlingTeam[curBowler].runsConceded : '',
-            currOver: currOver, updatedAt: Date.now()
+            roomCode: hostRoomCode,
+            privacy: liveBroadcastPrivacy,
+            ended: false,
+            aborted: false,
+            paused: !!isPaused,
+            pausedAt: isPaused ? Date.now() : null,
+            teamA: teamAName,
+            teamB: teamBName,
+            battingTeam: isSecondInnings ? teamBName : teamAName,
+            score: totalRuns + '/' + wicketsDown,
+            overs: formatOvers(legalBalls) + '/' + (maxOvers === 999 ? '∞' : maxOvers),
+            crr: crr,
+            targetInfo: targetInfo,
+            striker: battingTeam[cur] ? battingTeam[cur].name + ' ' + battingTeam[cur].runs + '(' + battingTeam[cur].balls + ')' : '-',
+            nonStriker: nsObj ? nsObj.name + ' ' + nsObj.runs + '(' + nsObj.balls + ')' : '',
+            bowler: bowlingTeam[curBowler] ? bowlingTeam[curBowler].name + ' ' + bowlingTeam[curBowler].wicketsTaken + '-' + bowlingTeam[curBowler].runsConceded + ' (' + formatOvers(bowlingTeam[curBowler].ballsBowled) + ')' : '-',
+            currOver: currOver.slice(),
+            recentBalls: allBalls.slice(-8).reverse(),
+            updatedAt: Date.now()
         });
     } catch (e) {}
 }
@@ -2484,18 +2615,19 @@ function pushLiveRoomUpdate() {
 function loadActiveBroadcastRooms() {
     var pills = document.getElementById('activeRoomsPills');
     if (!database || !pills) return;
-    var nowMs = Date.now(), DAY_MS = 24 * 60 * 60 * 1000;
+    var nowMs = Date.now();
     database.ref('live_rooms').limitToLast(15).once('value', function(snap) {
         var val = snap.val();
         if (!val) { pills.innerHTML = '<span style="font-size:9px;color:var(--muted)">No public rooms live</span>'; return; }
         var htmlArr = [];
         Object.keys(val).forEach(function(k) {
             var r = val[k];
-            if (!r || !r.teamA || r.teamA === 'undefined' || r.ended || !r.updatedAt || (nowMs - r.updatedAt) > DAY_MS) {
+            var refTime = (r && (r.pausedAt || r.updatedAt)) || 0;
+            if (!r || !r.teamA || r.teamA === 'undefined' || r.ended || r.aborted || !refTime || (nowMs - refTime) > DAY_MS) {
                 try { database.ref('live_rooms/' + k).remove(); } catch (e) {}
                 return;
             }
-            if (r.privacy === 'public') htmlArr.push('<button class="btn light" style="padding:4px 8px;font-size:9px" onclick="openFullSpectatorScreen(\'' + k + '\', false)">🔴 #' + k + ' (' + r.teamA + ' vs ' + r.teamB + ')</button>');
+            if (r.privacy === 'public') htmlArr.push('<button class="btn light" style="padding:4px 8px;font-size:9px" onclick="openFullSpectatorScreen(\'' + k + '\', false)">' + (r.paused ? '⏸️' : '🔴') + ' #' + k + ' (' + r.teamA + ' vs ' + r.teamB + ')</button>');
         });
         pills.innerHTML = htmlArr.length ? htmlArr.join('') : '<span style="font-size:9px;color:var(--muted)">No public rooms live</span>';
     });
@@ -2519,15 +2651,31 @@ function openFullSpectatorScreen(code, strictMode) {
     fullSpectatorRoomRef = database.ref('live_rooms/' + code);
     fullSpectatorRoomRef.on('value', function(snap) {
         var r = snap.val();
-        if (!r || !r.teamA || r.teamA === 'undefined') {
-            document.getElementById('tvSpecLiveBody').innerHTML = '<div class="glass" style="text-align:center;padding:24px">⚠️ Room #' + code + ' has ended.</div>';
+        if (!r || !r.teamA || r.teamA === 'undefined' || r.aborted) {
+            document.getElementById('tvSpecLiveBody').innerHTML = '<div class="glass" style="text-align:center;padding:24px">⚠️ Room #' + code + ' has ended or been removed.</div>';
             return;
         }
+        var overDotsHtml = (r.currOver || []).map(function(d) {
+            var bg = d === 'W' ? '#ff2d55' : (d === '4' || d === '6' ? 'var(--gold)' : 'var(--pill-bg)');
+            return '<span style="min-width:26px;height:26px;border-radius:50%;background:' + bg + ';color:' + (d === '4' || d === '6' ? '#111' : '#fff') + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900">' + d + '</span>';
+        }).join('') || '<span style="font-size:9px;color:var(--muted)">Waiting for next ball...</span>';
+
+        var timelineHtml = (r.recentBalls || []).map(function(b) {
+            return '<div style="padding:5px 8px;background:var(--pill-bg);border-radius:8px;display:flex;justify-content:space-between;font-size:10px;margin-top:4px"><span><b>' + b.over + '</b> ' + b.bowler + ' to ' + b.batter + '</span><b style="color:' + (b.wicket ? '#ff2d55' : (b.runs >= 4 ? 'var(--gold)' : '#fff')) + '">' + b.label + '</b></div>';
+        }).join('');
+
         document.getElementById('tvSpecLiveBody').innerHTML =
-            '<div class="jumbotron"><div style="font-size:11px;color:var(--gold);font-weight:900">' + r.teamA + ' vs ' + r.teamB + '</div>' +
-            '<div style="font-size:12px;color:#aaa;margin-top:4px">' + (r.battingTeam || r.teamA) + ' BATTING</div>' +
-            '<div class="jumbo-score">' + (r.score || '0/0') + '</div><div style="font-size:13px;font-weight:900;color:var(--cyan)">OVERS: ' + (r.overs || '0.0') + '</div>' +
-            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:11px"><div>🏏 <b>' + (r.striker || '-') + '</b></div><div style="margin-top:4px">🎯 <b>' + (r.bowler || '-') + '</b></div></div></div>';
+            '<div class="jumbotron"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--gold);font-weight:900">' + r.teamA + ' vs ' + r.teamB + '</span>' +
+            (r.paused ? '<span class="badge gold">⏸️ PAUSED</span>' : '<span class="badge dark" style="color:#00e676;border-color:#00e676">● LIVE</span>') + '</div>' +
+            '<div style="font-size:12px;color:#aaa;margin-top:6px">' + (r.battingTeam || r.teamA) + ' BATTING</div>' +
+            '<div class="jumbo-score">' + (r.score || '0/0') + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span style="font-size:13px;font-weight:900;color:var(--cyan)">OVERS: ' + (r.overs || '0.0') + '</span><span style="font-size:10px;font-weight:900;color:var(--emerald)">' + (r.targetInfo || '') + '</span></div>' +
+            '<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:11px">' +
+            '<div>🏏 <b>' + (r.striker || '-') + ' *</b></div>' +
+            (r.nonStriker ? '<div style="margin-top:3px;opacity:0.85">🏃 ' + r.nonStriker + '</div>' : '') +
+            '<div style="margin-top:6px;color:var(--cyan)">🎯 <b>' + (r.bowler || '-') + '</b></div></div>' +
+            '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.15)"><div style="font-size:8px;color:var(--muted);font-weight:900;margin-bottom:5px">THIS OVER</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + overDotsHtml + '</div></div></div>' +
+            (timelineHtml ? '<div class="glass" style="margin-top:10px"><div style="font-size:9px;font-weight:900;color:var(--gold);margin-bottom:4px">🎬 RECENT BALLS</div>' + timelineHtml + '</div>' : '');
     });
 }
 function closeFullSpectatorScreen() {
@@ -2601,7 +2749,6 @@ function cloudRestore(silent) {
     });
 }
 
-/* Play Store Data Deletion Compliance: Permanently removes user's cloud backup node */
 function deleteCloudDataOnly() {
     if (!database || !currentGmailUser) return showToast('⚠️ Sign in first to delete cloud data');
     openCustomConfirm('🗑️', 'DELETE CLOUD DATA?', 'Permanently delete all backup data stored in the cloud for ' + currentGmailUser + '? (Your local phone data will remain untouched).', 'DELETE CLOUD', function() {
@@ -2630,6 +2777,7 @@ function triggerDLSMethod() {
         if (!isNaN(parsed) && parsed > 0) {
             targetToWin = parsed;
             updateMatchUI();
+            if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
             showToast('🌧️ DLS Target: ' + targetToWin);
         }
     });
