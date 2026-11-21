@@ -19,18 +19,13 @@
 <div id="impactRippleOverlay"></div>
 <div class="ambient-bg"><div class="orb o1" id="bgOrb1"></div><div class="orb o2" id="bgOrb2"></div><div class="orb o3" id="bgOrb3"></div></div>
 
-<!-- 4 / 6 / OUT Broadcast Pop-up Animation -->
-<div id="eventPopupBox" class="event-popup-box" style="display:none">
-  <div id="eventPopupIcon" class="event-popup-icon">💥</div>
-  <div id="eventPopupTitle" class="event-popup-title">MASSIVE SIX!</div>
-  <div id="eventPopupSub" class="event-popup-sub">OUT OF THE PARK</div>
-</div>
-
-<!-- 50 / 100 Bat Raise Milestone Animation -->
-<div id="batRaiseAnimBox" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:25000;text-align:center;pointer-events:none;background:rgba(10,12,22,0.94);padding:22px 32px;border-radius:26px;border:2px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,0.9)">
-  <div class="bat-raise-icon">🏏</div>
-  <div id="batRaiseText" style="font-size:32px;font-family:'Space Grotesk',sans-serif;font-weight:900;color:var(--gold)">50 RUNS!</div>
-  <div id="batRaisePlayer" style="font-size:15px;font-weight:900;color:#fff;margin-top:4px;letter-spacing:1px">PLAYER</div>
+<!-- SLEEK TOP LIQUID MILESTONE BANNER (50 to 500 - NON-INTRUSIVE) -->
+<div id="milestoneToastBanner" class="milestone-banner-pill" style="display:none">
+  <span id="milestoneBannerIcon" class="milestone-banner-icon">🏏</span>
+  <div style="text-align:left">
+    <div id="milestoneTierPill" class="milestone-banner-tier">HALF CENTURY</div>
+    <div id="batRaiseText" class="milestone-banner-title">50 RUNS MILESTONE!</div>
+  </div>
 </div>
 
 <!-- Full-Screen Live Spectator TV Broadcast Screen -->
@@ -248,7 +243,11 @@
     <button class="btn gold" style="width:100%;padding:11px;margin-top:10px" onclick="addProfile()">+ ADD PLAYER</button>
   </div>
   <div class="glass">
-    <div style="font-size:11px;font-weight:900;margin-bottom:8px">REGISTERED PLAYERS (TAP FOR RADAR CHART)</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:900">REGISTERED PLAYERS (TAP FOR RADAR CHART)</div>
+      <span id="rosterCountBadge" class="badge gold" style="font-size:8px">0</span>
+    </div>
+    <input type="text" id="rosterSearchInput" class="liquid-search-input" placeholder="🔍 Search registered players..." oninput="filterRegisteredPlayers(this.value)" style="margin-bottom:8px">
     <div id="profilesList"></div>
   </div>
 </div>
@@ -745,7 +744,7 @@
       <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #00e676"><b>🤖 Live AI Win Predictor:</b> Real-time win probability percentage bar calculated dynamically after every ball.</div>
       <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #a855f7"><b>🏆 Auto NRR League Engine:</b> Interactive tournament fixtures with automatic Points Table & Net Run Rate (NRR) + Grand Final generator.</div>
       <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--gold)"><b>📸 9:16 HD Story Poster:</b> Instant 1080×1920 vertical match summary poster generator for WhatsApp Status, TikTok & Instagram Stories.</div>
-      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #ff2d55"><b>🔊 Pro Stadium Synthesizer & Voice:</b> 100% copyright-free Web Audio bat cracks, crowd roars, trumpets, stump shatters, 3D 4/6/OUT pop-ups & hands-free voice scoring.</div>
+      <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid #ff2d55"><b>🔊 Pro Stadium Synthesizer & Voice:</b> 100% copyright-free Web Audio bat cracks, crowd roars, trumpets, stump shatters & hands-free voice scoring.</div>
       <div style="padding:8px 10px;background:var(--pill-bg);border-radius:11px;border-left:3px solid var(--cyan)"><b>🎖️ 113 Career Badges & Live TV:</b> Unlockable milestone badges, Worm & Manhattan charts, QR Live Spectator TV & Google Cloud Backup.</div>
     </div>
 
