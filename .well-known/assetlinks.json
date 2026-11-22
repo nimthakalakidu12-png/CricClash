@@ -1,12 +1,8 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "io.github.ඔබේ_github_නම.twa",
-      "sha256_cert_fingerprints": [
-        "ඔබේ_SHA_256_FINGERPRINT_එක_මෙතනට_දමන්න"
-      ]
-    }
-  }
-]
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.nimthakalakidu12_png.twa",
+        "sha256_cert_fingerprints": ["4A:EE:DE:BB:A3:D6:94:EB:E6:85:93:B5:1E:99:82:62:E3:6F:3B:E5:48:6E:01:E7:FA:5F:F5:5C:BF:F5:6A:6E"]
+      }
+    }]
