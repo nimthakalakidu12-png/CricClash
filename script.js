@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - PART 1)
+   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js)
    ========================================================================== */
 
 const firebaseConfig = {
@@ -368,7 +368,7 @@ function playSFX(type) {
     } catch (e) {}
 }
 
-/* ================== CLEAN VOICE COMMENTARY (NO PLAYER NAMES) ================== */
+/* ================== CLEAN VOICE COMMENTARY ================== */
 var cachedVoices = [];
 function initSpeechVoices() {
     if (!('speechSynthesis' in window)) return;
@@ -674,7 +674,9 @@ function saveAll(silent) {
         localStorage.setItem('cric_clash_players_v10', JSON.stringify(players));
         localStorage.setItem('cric_league_v11', JSON.stringify(leagues));
         localStorage.setItem('cric_total_alltime_v30', String(totalAllTimeMatches));
-        if (!silent && currentGmailUser && settings.autoSave) cloudBackup(true);
+        if (!silent && currentGmailUser && settings.autoSave && (players.length > 0 || matchHistory.length > 0)) {
+            cloudBackup(true);
+        }
     } catch (e) {}
 }
 
@@ -1558,9 +1560,6 @@ function extraNoBall() {
     playSFX('siren'); speakCommentary(pickRandomCommentary('nb'));
     checkPostBallProgress(true);
 }
-/* ==========================================================================
-   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - PART 2)
-   ========================================================================== */
 
 function outPlayer() { if (matchActive) document.getElementById('wicketModal').classList.add('open'); }
 function closeWicketModal() { document.getElementById('wicketModal').classList.remove('open'); }
@@ -2781,7 +2780,7 @@ function shareCertificateWhatsApp() {
     }
 }
 
-/* ================== FULL LIVE SPECTATOR TV, QR, AUTH & FULL RESET ================== */
+/* ================== FULL LIVE SPECTATOR TV, QR, AUTH & CLOUD RESTORE FIX ================== */
 function openSpectatorHub() { document.getElementById('spectatorModal').classList.add('open'); loadActiveBroadcastRooms(); }
 function closeSpectatorHub() { document.getElementById('spectatorModal').classList.remove('open'); }
 
@@ -2920,18 +2919,33 @@ function shareClickableSpectatorLink() { shareLiveLink(); shareLiveLinkWhatsApp(
 function loginWithGoogle() {
     if (!auth || !googleProvider) return showToast('⚠️ Auth unavailable');
     auth.signInWithPopup(googleProvider).then(function(res) {
-        currentGmailUser = res.user.email; currentGoogleName = res.user.displayName || '';
-        localStorage.setItem('cric_gmail_user', currentGmailUser); localStorage.setItem('cric_google_name', currentGoogleName);
-        updateAuthUI(); showToast('✅ Signed in as ' + currentGmailUser);
+        currentGmailUser = res.user.email;
+        currentGoogleName = res.user.displayName || '';
+        localStorage.setItem('cric_gmail_user', currentGmailUser);
+        localStorage.setItem('cric_google_name', currentGoogleName);
+        updateAuthUI();
+        showToast('✅ Signed in as ' + currentGmailUser);
+        if (players.length === 0 && matchHistory.length === 0) {
+            cloudRestore(false);
+        }
     }).catch(function(err) { showToast('⚠️ ' + err.message); });
 }
+
 function gmailBridgeLogin(isRestore) {
     var email = document.getElementById('gmailInput') ? document.getElementById('gmailInput').value.trim().toLowerCase() : '';
     if (!email || !email.includes('@')) return showToast('⚠️ Enter valid email');
-    currentGmailUser = email; localStorage.setItem('cric_gmail_user', email); updateAuthUI();
-    if (isRestore) cloudRestore(false); else cloudBackup(false);
+    currentGmailUser = email;
+    localStorage.setItem('cric_gmail_user', email);
+    updateAuthUI();
+    if (isRestore || (players.length === 0 && matchHistory.length === 0)) {
+        cloudRestore(false);
+    } else {
+        cloudBackup(false);
+    }
 }
+
 function gmailLogout() { currentGmailUser = null; localStorage.removeItem('cric_gmail_user'); updateAuthUI(); showToast('👋 Signed out'); }
+
 function updateAuthUI() {
     var loginArea = document.getElementById('gmailLoginArea'), loggedArea = document.getElementById('gmailLoggedArea'), status = document.getElementById('gmailStatus');
     if (currentGmailUser) {
@@ -2947,30 +2961,109 @@ function updateAuthUI() {
         if (status) status.textContent = 'Not signed in';
     }
 }
+
 function cloudBackup(silent) {
     if (!database || !currentGmailUser) return;
-    var key = currentGmailUser.replace(/[.@]/g, '_');
-    database.ref('user_backups/' + key).set({ players: players, matchHistory: matchHistory, leagues: leagues, totalAllTimeMatches: totalAllTimeMatches, updatedAt: new Date().toLocaleString() }).then(function() {
+    if (players.length === 0 && matchHistory.length === 0 && leagues.length === 0) {
+        if (!silent) showToast('⚠️ Nothing local to backup (Try Restore first!)');
+        return;
+    }
+    var key = currentGmailUser.toLowerCase().replace(/[.@]/g, '_');
+    var payload = {
+        email: currentGmailUser,
+        players: players,
+        matchHistory: matchHistory,
+        leagues: leagues,
+        totalAllTimeMatches: totalAllTimeMatches,
+        updatedAt: new Date().toLocaleString()
+    };
+    database.ref('user_backups/' + key).set(payload).then(function() {
         if (!silent) showToast('☁️ Cloud Backup Complete!');
+    }).catch(function(err) {
+        if (!silent) showToast('⚠️ Backup failed: ' + err.message);
     });
 }
+
+function applyRestoredPayload(d, silent) {
+    players = d.players || [];
+    matchHistory = d.matchHistory || [];
+    leagues = d.leagues || [];
+    leagues.forEach(ensureLeagueStructure);
+    totalAllTimeMatches = d.totalAllTimeMatches || matchHistory.length;
+    players.forEach(function(pl) {
+        if (!pl.career) pl.career = { matches: 0, runs: 0, balls: 0, fours: 0, sixes: 0, best: 0, wins: 0, fifties: 0, hundreds: 0, ducks: 0, streak: 0, maxStreak: 0, badges: [], wickets: 0, ballsBowled: 0, runsConceded: 0, form: [], fiveWicketHauls: 0, sixBlitz: false, maxSixesInMatch: 0 };
+        if (!pl.career.form) pl.career.form = [];
+        if (!pl.career.badges) pl.career.badges = [];
+        if (!pl.theme) pl.theme = '#f5c542';
+        checkAndAwardBadges(pl);
+    });
+    saveAll(true);
+    refreshHomeUI();
+    renderProfiles();
+    if (!silent) showToast('✅ Restored ' + players.length + ' Players & ' + matchHistory.length + ' Matches!');
+}
+
 function cloudRestore(silent) {
-    if (!database || !currentGmailUser) return;
-    var key = currentGmailUser.replace(/[.@]/g, '_');
-    database.ref('user_backups/' + key).once('value', function(snap) {
-        var d = snap.val(); if (!d) return showToast('⚠️ No backup found');
-        players = d.players || []; matchHistory = d.matchHistory || []; leagues = d.leagues || [];
-        leagues.forEach(ensureLeagueStructure);
-        totalAllTimeMatches = d.totalAllTimeMatches || matchHistory.length;
-        saveAll(true); refreshHomeUI();
-        if (!silent) showToast('🔄 Restored from Cloud!');
+    if (!database) return showToast('⚠️ Database offline');
+    if (!currentGmailUser && !(auth && auth.currentUser)) {
+        return showToast('⚠️ Sign in with Gmail first!');
+    }
+
+    var emailStr = (currentGmailUser || (auth && auth.currentUser ? auth.currentUser.email : '')).trim().toLowerCase();
+    var emailKey = emailStr.replace(/[.@]/g, '_');
+    var authUid = (auth && auth.currentUser) ? auth.currentUser.uid : null;
+
+    if (!silent) showToast('🔄 Searching cloud backups...');
+
+    // 1. Check user_backups/{emailKey}
+    database.ref('user_backups/' + emailKey).once('value').then(function(snap) {
+        var d = snap.val();
+        if (d && (d.players || d.matchHistory)) {
+            applyRestoredPayload(d, silent);
+            return;
+        }
+        // 2. Search all nodes in user_backups matching email
+        return database.ref('user_backups').once('value').then(function(snapAll) {
+            var allUB = snapAll.val() || {};
+            var foundUB = null;
+            Object.keys(allUB).forEach(function(k) {
+                var item = allUB[k];
+                if (item && ((item.email && item.email.toLowerCase() === emailStr) || k.toLowerCase() === emailKey || k.toLowerCase().includes(emailKey))) {
+                    foundUB = item;
+                }
+            });
+            if (foundUB && (foundUB.players || foundUB.matchHistory)) {
+                applyRestoredPayload(foundUB, silent);
+                return;
+            }
+            // 3. Fallback to backups/{uid} or backups/{emailKey}
+            return database.ref('backups').once('value').then(function(snapB) {
+                var allB = snapB.val() || {};
+                var foundB = (authUid && allB[authUid]) ? allB[authUid] : (allB[emailKey] || null);
+                if (!foundB) {
+                    Object.keys(allB).forEach(function(k) {
+                        var item = allB[k];
+                        if (item && ((item.email && item.email.toLowerCase() === emailStr) || k.toLowerCase().includes(emailKey))) {
+                            foundB = item;
+                        }
+                    });
+                }
+                if (foundB && (foundB.players || foundB.matchHistory)) {
+                    applyRestoredPayload(foundB, silent);
+                } else if (!silent) {
+                    showToast('⚠️ No backup found in Cloud for ' + emailStr);
+                }
+            });
+        });
+    }).catch(function(err) {
+        if (!silent) showToast('⚠️ Restore error: ' + err.message);
     });
 }
 
 function deleteCloudDataOnly() {
     if (!database || !currentGmailUser) return showToast('⚠️ Sign in first to delete cloud data');
     openCustomConfirm('🗑️', 'DELETE CLOUD DATA?', 'Permanently delete all backup data stored in the cloud for ' + currentGmailUser + '? (Your local phone data will remain untouched).', 'DELETE CLOUD', function() {
-        var key = currentGmailUser.replace(/[.@]/g, '_');
+        var key = currentGmailUser.toLowerCase().replace(/[.@]/g, '_');
         database.ref('user_backups/' + key).remove().then(function() {
             showToast('🗑️ Cloud data permanently deleted!');
         }).catch(function() {
@@ -3113,6 +3206,7 @@ window.addEventListener('DOMContentLoaded', function() {
     var roomParam = new URLSearchParams(window.location.search).get('room');
     if (roomParam) openFullSpectatorScreen(roomParam, true);
 });
+
 /* ==========================================================================
    CRIC CLASH • ADMIN PRESENCE & USER MONITOR HOOK
    ========================================================================== */
@@ -3126,7 +3220,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     function getActiveUserKey() {
-        if (currentGmailUser) return 'user_' + currentGmailUser.replace(/[.@#$[\]]/g, '_');
+        if (currentGmailUser) return 'user_' + currentGmailUser.toLowerCase().replace(/[.@#$[\]]/g, '_');
         if (auth && auth.currentUser && auth.currentUser.uid) return 'auth_' + auth.currentUser.uid;
         return deviceUid;
     }
@@ -3162,7 +3256,6 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Ban check
         userRef.child('banned').on('value', function(snap) {
             if (snap.val() === true) {
                 document.body.innerHTML = '<div style="background:#05060a;color:#ff2d55;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:sans-serif"><h2>🚫 ACCESS SUSPENDED</h2><p style="color:#aaa;margin-top:8px">Your access to CRIC CLASH has been restricted by the Administrator.</p></div>';
