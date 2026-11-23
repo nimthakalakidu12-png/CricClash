@@ -2780,7 +2780,7 @@ function shareCertificateWhatsApp() {
     }
 }
 
-/* ================== FULL LIVE SPECTATOR TV, QR, AUTH & CLOUD RESTORE FIX ================== */
+/* ================== FULL LIVE SPECTATOR TV, QR, AUTH & CLOUD RESTORE ================== */
 function openSpectatorHub() { document.getElementById('spectatorModal').classList.add('open'); loadActiveBroadcastRooms(); }
 function closeSpectatorHub() { document.getElementById('spectatorModal').classList.remove('open'); }
 
@@ -2984,23 +2984,164 @@ function cloudBackup(silent) {
     });
 }
 
+function normalizeLegacyMatchItem(rawItem, index) {
+    if (!rawItem || typeof rawItem !== 'object') return null;
+    if (rawItem.teamA && rawItem.teamB && rawItem.inn1Score) return rawItem;
+
+    var tA = rawItem.batter1 || rawItem.teamA || 'Team A';
+    var tB = rawItem.batter2 || rawItem.teamB || 'Team B';
+    var sc1 = rawItem.batter1Runs || rawItem.inn1Score || '0/0';
+    var sc2 = rawItem.batter2Runs || rawItem.inn2Score || '';
+    var b1 = rawItem.batter1Balls || 0;
+    var b2 = rawItem.batter2Balls || 0;
+    var dt = rawItem.date || rawItem.timestamp || new Date().toLocaleDateString();
+
+    function mapBatters(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map(function(x, i) {
+            return {
+                id: 'leg_bat_' + index + '_' + i,
+                name: x.name || x.playerName || ('Batter ' + (i + 1)),
+                runs: Number(x.runs || 0),
+                balls: Number(x.balls || 0),
+                fours: Number(x.fours || 0),
+                sixes: Number(x.sixes || 0),
+                out: !!x.out,
+                howOut: x.howOut || x.dismissal || ''
+            };
+        });
+    }
+
+    function mapBowlers(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map(function(x, i) {
+            var balls = Number(x.ballsBowled || x.balls || 0);
+            return {
+                id: 'leg_bowl_' + index + '_' + i,
+                name: x.name || x.playerName || ('Bowler ' + (i + 1)),
+                ballsBowled: balls,
+                oversBowled: Math.floor(balls / 6) + '.' + (balls % 6),
+                runsConceded: Number(x.runsConceded || x.runs || 0),
+                wicketsTaken: Number(x.wicketsTaken || x.wickets || 0)
+            };
+        });
+    }
+
+    var winnerTxt = (rawItem.awards && rawItem.awards.winner) ? rawItem.awards.winner : (rawItem.winner || (tA + ' vs ' + tB));
+
+    return {
+        id: 'leg_m_' + index + '_' + Date.now(),
+        date: dt,
+        mode: rawItem.mode || '1v1',
+        teamA: tA,
+        teamB: tB,
+        inn1Score: sc1 + (b1 ? ' (' + b1 + 'b)' : ''),
+        inn2Score: sc2 ? (sc2 + (b2 ? ' (' + b2 + 'b)' : '')) : '',
+        winner: winnerTxt,
+        margin: rawItem.margin || '',
+        inn1Data: {
+            teamName: tA,
+            runs: parseInt(String(sc1).split('/')[0]) || 0,
+            wickets: parseInt(String(sc1).split('/')[1]) || 0,
+            overs: (b1 ? (Math.floor(b1 / 6) + '.' + (b1 % 6)) : '0.0'),
+            balls: b1,
+            extras: Number(rawItem.inn1Extras || 0),
+            fow: [],
+            batting: mapBatters(rawItem.inn1Batters),
+            bowling: mapBowlers(rawItem.inn1Bowlers)
+        },
+        inn2Data: sc2 ? {
+            teamName: tB,
+            runs: parseInt(String(sc2).split('/')[0]) || 0,
+            wickets: parseInt(String(sc2).split('/')[1]) || 0,
+            overs: (b2 ? (Math.floor(b2 / 6) + '.' + (b2 % 6)) : '0.0'),
+            balls: b2,
+            extras: Number(rawItem.inn2Extras || 0),
+            fow: [],
+            batting: mapBatters(rawItem.inn2Batters),
+            bowling: mapBowlers(rawItem.inn2Bowlers)
+        } : null
+    };
+}
+
+function extractPlayersFromMatchList(matchesArr) {
+    var seen = {};
+    var builtPlayers = [];
+    (matchesArr || []).forEach(function(m) {
+        var pools = [];
+        if (m.inn1Data) pools = pools.concat(m.inn1Data.batting || [], m.inn1Data.bowling || []);
+        if (m.inn2Data) pools = pools.concat(m.inn2Data.batting || [], m.inn2Data.bowling || []);
+        pools.forEach(function(p) {
+            if (!p || !p.name) return;
+            var key = p.name.trim().toLowerCase();
+            if (!key || seen[key]) return;
+            seen[key] = true;
+            builtPlayers.push({
+                id: 'pl_' + key.replace(/[^a-z0-9]/g, '_'),
+                name: p.name.trim(),
+                avatar: null,
+                theme: '#f5c542',
+                career: {
+                    matches: 0, runs: 0, balls: 0, fours: 0, sixes: 0,
+                    best: 0, wins: 0, fifties: 0, hundreds: 0, ducks: 0,
+                    streak: 0, maxStreak: 0, badges: [],
+                    wickets: 0, ballsBowled: 0, runsConceded: 0,
+                    form: [], fiveWicketHauls: 0, sixBlitz: false, maxSixesInMatch: 0
+                }
+            });
+        });
+    });
+    return builtPlayers;
+}
+
 function applyRestoredPayload(d, silent) {
-    players = d.players || [];
-    matchHistory = d.matchHistory || [];
-    leagues = d.leagues || [];
+    var rawHist = Array.isArray(d.history) ? d.history : (d.history ? Object.values(d.history) : (Array.isArray(d.matchHistory) ? d.matchHistory : (d.matchHistory ? Object.values(d.matchHistory) : [])));
+    matchHistory = rawHist.map(function(item, idx) { return normalizeLegacyMatchItem(item, idx); }).filter(Boolean);
+
+    if (Array.isArray(d.players) && d.players.length > 0) {
+        players = d.players;
+    } else if (d.players && typeof d.players === 'object' && Object.keys(d.players).length > 0) {
+        players = Object.values(d.players);
+    } else {
+        players = extractPlayersFromMatchList(matchHistory);
+    }
+
+    leagues = Array.isArray(d.leagues) ? d.leagues : (d.leagues ? Object.values(d.leagues) : []);
     leagues.forEach(ensureLeagueStructure);
-    totalAllTimeMatches = d.totalAllTimeMatches || matchHistory.length;
+    totalAllTimeMatches = Math.max(Number(d.totalAllTimeMatches || 0), matchHistory.length);
+
     players.forEach(function(pl) {
-        if (!pl.career) pl.career = { matches: 0, runs: 0, balls: 0, fours: 0, sixes: 0, best: 0, wins: 0, fifties: 0, hundreds: 0, ducks: 0, streak: 0, maxStreak: 0, badges: [], wickets: 0, ballsBowled: 0, runsConceded: 0, form: [], fiveWicketHauls: 0, sixBlitz: false, maxSixesInMatch: 0 };
+        if (!pl.career) {
+            pl.career = { matches: 0, runs: 0, balls: 0, fours: 0, sixes: 0, best: 0, wins: 0, fifties: 0, hundreds: 0, ducks: 0, streak: 0, maxStreak: 0, badges: [], wickets: 0, ballsBowled: 0, runsConceded: 0, form: [], fiveWicketHauls: 0, sixBlitz: false, maxSixesInMatch: 0 };
+        }
         if (!pl.career.form) pl.career.form = [];
         if (!pl.career.badges) pl.career.badges = [];
         if (!pl.theme) pl.theme = '#f5c542';
         checkAndAwardBadges(pl);
     });
+
     saveAll(true);
     refreshHomeUI();
     renderProfiles();
     if (!silent) showToast('✅ Restored ' + players.length + ' Players & ' + matchHistory.length + ' Matches!');
+}
+
+function findUserNodeInObject(obj, targetEmail, emailKey) {
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj[emailKey]) return obj[emailKey];
+    if (obj[targetEmail]) return obj[targetEmail];
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var val = obj[k];
+        if (!val || typeof val !== 'object') continue;
+        var kl = k.toLowerCase();
+        var itemEmail = (val.email || '').toLowerCase();
+        if (kl === emailKey.toLowerCase() || kl === targetEmail.toLowerCase() || kl.includes(emailKey.toLowerCase()) || itemEmail === targetEmail.toLowerCase() || kl.includes(targetEmail.split('@')[0])) {
+            if (val.history || val.matchHistory || val.players) return val;
+        }
+    }
+    return null;
 }
 
 function cloudRestore(silent) {
@@ -3011,50 +3152,30 @@ function cloudRestore(silent) {
 
     var emailStr = (currentGmailUser || (auth && auth.currentUser ? auth.currentUser.email : '')).trim().toLowerCase();
     var emailKey = emailStr.replace(/[.@]/g, '_');
-    var authUid = (auth && auth.currentUser) ? auth.currentUser.uid : null;
 
-    if (!silent) showToast('🔄 Searching cloud backups...');
+    if (!silent) showToast('🔄 Searching cloud database...');
 
-    // 1. Check user_backups/{emailKey}
-    database.ref('user_backups/' + emailKey).once('value').then(function(snap) {
-        var d = snap.val();
-        if (d && (d.players || d.matchHistory)) {
-            applyRestoredPayload(d, silent);
-            return;
+    database.ref('/').once('value').then(function(rootSnap) {
+        var rootVal = rootSnap.val() || {};
+        var foundNode =
+            findUserNodeInObject(rootVal, emailStr, emailKey) ||
+            findUserNodeInObject(rootVal.user_backups, emailStr, emailKey) ||
+            findUserNodeInObject(rootVal.backups, emailStr, emailKey) ||
+            findUserNodeInObject(rootVal.users, emailStr, emailKey);
+
+        if (!foundNode) {
+            Object.keys(rootVal).forEach(function(topKey) {
+                if (!foundNode && rootVal[topKey] && typeof rootVal[topKey] === 'object') {
+                    foundNode = findUserNodeInObject(rootVal[topKey], emailStr, emailKey);
+                }
+            });
         }
-        // 2. Search all nodes in user_backups matching email
-        return database.ref('user_backups').once('value').then(function(snapAll) {
-            var allUB = snapAll.val() || {};
-            var foundUB = null;
-            Object.keys(allUB).forEach(function(k) {
-                var item = allUB[k];
-                if (item && ((item.email && item.email.toLowerCase() === emailStr) || k.toLowerCase() === emailKey || k.toLowerCase().includes(emailKey))) {
-                    foundUB = item;
-                }
-            });
-            if (foundUB && (foundUB.players || foundUB.matchHistory)) {
-                applyRestoredPayload(foundUB, silent);
-                return;
-            }
-            // 3. Fallback to backups/{uid} or backups/{emailKey}
-            return database.ref('backups').once('value').then(function(snapB) {
-                var allB = snapB.val() || {};
-                var foundB = (authUid && allB[authUid]) ? allB[authUid] : (allB[emailKey] || null);
-                if (!foundB) {
-                    Object.keys(allB).forEach(function(k) {
-                        var item = allB[k];
-                        if (item && ((item.email && item.email.toLowerCase() === emailStr) || k.toLowerCase().includes(emailKey))) {
-                            foundB = item;
-                        }
-                    });
-                }
-                if (foundB && (foundB.players || foundB.matchHistory)) {
-                    applyRestoredPayload(foundB, silent);
-                } else if (!silent) {
-                    showToast('⚠️ No backup found in Cloud for ' + emailStr);
-                }
-            });
-        });
+
+        if (foundNode && (foundNode.history || foundNode.matchHistory || foundNode.players)) {
+            applyRestoredPayload(foundNode, silent);
+        } else if (!silent) {
+            showToast('⚠️ No backup found for ' + emailStr);
+        }
     }).catch(function(err) {
         if (!silent) showToast('⚠️ Restore error: ' + err.message);
     });
