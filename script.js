@@ -3113,3 +3113,70 @@ window.addEventListener('DOMContentLoaded', function() {
     var roomParam = new URLSearchParams(window.location.search).get('room');
     if (roomParam) openFullSpectatorScreen(roomParam, true);
 });
+/* ==========================================================================
+   CRIC CLASH • ADMIN PRESENCE & USER MONITOR HOOK
+   ========================================================================== */
+(function initCricClashAdminMonitor() {
+    if (!database) return;
+
+    var deviceUid = localStorage.getItem('cc_device_uid');
+    if (!deviceUid) {
+        deviceUid = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
+        localStorage.setItem('cc_device_uid', deviceUid);
+    }
+
+    function getActiveUserKey() {
+        if (currentGmailUser) return 'user_' + currentGmailUser.replace(/[.@#$[\]]/g, '_');
+        if (auth && auth.currentUser && auth.currentUser.uid) return 'auth_' + auth.currentUser.uid;
+        return deviceUid;
+    }
+
+    function syncPresenceToAdmin() {
+        var key = getActiveUserKey();
+        var userRef = database.ref('admin_users/' + key);
+        var connectedRef = database.ref('.info/connected');
+
+        var displayName = currentGoogleName || (currentGmailUser ? currentGmailUser.split('@')[0] : (players[0] ? players[0].name : 'Guest Player'));
+        var emailVal = currentGmailUser || (auth && auth.currentUser ? auth.currentUser.email : 'Guest Device');
+        var loginMethod = (auth && auth.currentUser) ? 'Google Auth' : (currentGmailUser ? 'Gmail Bridge' : 'Guest');
+        var deviceType = /Android/i.test(navigator.userAgent) ? 'Android' : (/iPhone|iPad/i.test(navigator.userAgent) ? 'iOS' : 'PC / Web');
+
+        connectedRef.on('value', function(snap) {
+            if (snap.val() === true) {
+                userRef.onDisconnect().update({
+                    online: false,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                userRef.update({
+                    id: key,
+                    name: displayName,
+                    email: emailVal,
+                    loginType: loginMethod,
+                    device: deviceType,
+                    playersCount: players.length,
+                    matchesCount: totalAllTimeMatches,
+                    online: true,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+        });
+
+        // Ban check
+        userRef.child('banned').on('value', function(snap) {
+            if (snap.val() === true) {
+                document.body.innerHTML = '<div style="background:#05060a;color:#ff2d55;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:sans-serif"><h2>🚫 ACCESS SUSPENDED</h2><p style="color:#aaa;margin-top:8px">Your access to CRIC CLASH has been restricted by the Administrator.</p></div>';
+            }
+        });
+    }
+
+    window.addEventListener('load', function() {
+        setTimeout(syncPresenceToAdmin, 1200);
+    });
+
+    if (auth) {
+        auth.onAuthStateChanged(function() {
+            syncPresenceToAdmin();
+        });
+    }
+})();
