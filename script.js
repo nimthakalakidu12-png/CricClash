@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - V2 FIXED)
+   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - V3 BALL-BY-BALL SAVE & RESUME)
    ========================================================================== */
 
 const firebaseConfig = {
@@ -684,13 +684,168 @@ function saveSettings() {
     try { localStorage.setItem('cric_settings_v30', JSON.stringify(settings)); } catch (e) {}
 }
 
+/* ================== BALL-BY-BALL AUTO-SAVE & AUTO-RESUME ENGINE ================== */
+function buildActiveMatchSnapshot() {
+    return {
+        id: activePausedMatchId || ('active_' + Date.now()),
+        savedAt: new Date().toLocaleTimeString(),
+        pausedAt: Date.now(),
+        hostRoomCode: hostRoomCode,
+        liveBroadcastPrivacy: liveBroadcastPrivacy,
+        matchMode: matchMode,
+        teamWicketRule: teamWicketRule,
+        teamAName: teamAName,
+        teamBName: teamBName,
+        teamAColor: teamAColor,
+        teamBColor: teamBColor,
+        teamA: teamA,
+        teamB: teamB,
+        ffaPlayers: ffaPlayers,
+        battingTeam: battingTeam,
+        bowlingTeam: bowlingTeam,
+        cur: cur,
+        nonStriker: nonStriker,
+        curBowler: curBowler,
+        currOver: currOver,
+        allBalls: allBalls,
+        overByOver: overByOver,
+        overWickets: overWickets,
+        fowList: fowList,
+        partnershipRuns: partnershipRuns,
+        partnershipBalls: partnershipBalls,
+        overRuns: overRuns,
+        overWktsCount: overWktsCount,
+        isFreeHit: Boolean(isFreeHit),
+        isSuperOver: Boolean(isSuperOver),
+        innings1: innings1,
+        isSecondInnings: Boolean(isSecondInnings),
+        targetToWin: targetToWin,
+        maxOvers: maxOvers,
+        wicketsDown: wicketsDown,
+        widesCount: widesCount,
+        noBallsCount: noBallsCount,
+        ffaTurnNumber: ffaTurnNumber,
+        activeLeagueMatchMeta: activeLeagueMatchMeta
+    };
+}
+
+function autoSaveBallByBallState() {
+    if (isStrictSpectatorLinkMode || !matchActive) return;
+    try {
+        var snap = buildActiveMatchSnapshot();
+        localStorage.setItem('cric_active_match_autosave_v1', JSON.stringify(snap));
+        if (database && currentGmailUser) {
+            var key = currentGmailUser.toLowerCase().replace(/[.@]/g, '_');
+            database.ref('user_active_match/' + key).set(snap).catch(function() {});
+        }
+    } catch (e) {}
+}
+
+function clearActiveMatchAutoSave() {
+    try {
+        localStorage.removeItem('cric_active_match_autosave_v1');
+        if (database && currentGmailUser) {
+            var key = currentGmailUser.toLowerCase().replace(/[.@]/g, '_');
+            database.ref('user_active_match/' + key).remove().catch(function() {});
+        }
+    } catch (e) {}
+}
+
+function hydrateMatchStateFromSnapshot(m) {
+    if (!m) return false;
+    activePausedMatchId = m.id || null;
+    hostRoomCode = m.hostRoomCode || hostRoomCode;
+    liveBroadcastPrivacy = m.liveBroadcastPrivacy || 'offline';
+    matchMode = m.matchMode || '1v1';
+    teamWicketRule = m.teamWicketRule || 'all_out';
+    teamAName = m.teamAName || 'Team A';
+    teamBName = m.teamBName || 'Team B';
+    teamAColor = m.teamAColor || '#4285f4';
+    teamBColor = m.teamBColor || '#ff1744';
+    teamA = m.teamA || [];
+    teamB = m.teamB || [];
+    ffaPlayers = m.ffaPlayers || [];
+    battingTeam = m.battingTeam || [];
+    bowlingTeam = m.bowlingTeam || [];
+    cur = (m.cur !== undefined) ? m.cur : 0;
+    nonStriker = (m.nonStriker !== undefined) ? m.nonStriker : -1;
+    curBowler = (m.curBowler !== undefined) ? m.curBowler : 0;
+    currOver = m.currOver || [];
+    allBalls = m.allBalls || [];
+    overByOver = m.overByOver || [];
+    overWickets = m.overWickets || [];
+    fowList = m.fowList || [];
+    partnershipRuns = m.partnershipRuns || 0;
+    partnershipBalls = m.partnershipBalls || 0;
+    overRuns = m.overRuns || 0;
+    overWktsCount = m.overWktsCount || 0;
+    isFreeHit = Boolean(m.isFreeHit);
+    isSuperOver = Boolean(m.isSuperOver);
+    innings1 = m.innings1 || null;
+    isSecondInnings = Boolean(m.isSecondInnings);
+    targetToWin = m.targetToWin || 0;
+    maxOvers = m.maxOvers || 10;
+    wicketsDown = m.wicketsDown || 0;
+    widesCount = m.widesCount || 0;
+    noBallsCount = m.noBallsCount || 0;
+    ffaTurnNumber = m.ffaTurnNumber || 0;
+    activeLeagueMatchMeta = m.activeLeagueMatchMeta || null;
+    matchActive = true;
+
+    var badge = document.getElementById('broadcastPrivacyBadge');
+    if (badge) {
+        if (liveBroadcastPrivacy === 'public') { badge.textContent = '🌐 PUBLIC'; badge.style.background = '#00c853'; badge.style.color = '#fff'; }
+        else if (liveBroadcastPrivacy === 'private') { badge.textContent = '🔒 PRIVATE'; badge.style.background = '#0a84ff'; badge.style.color = '#fff'; }
+        else { badge.textContent = '📴 OFFLINE'; badge.style.background = 'rgba(255,255,255,0.12)'; badge.style.color = '#ccc'; }
+    }
+    var shareWrap = document.getElementById('shareLiveBtnWrap');
+    if (shareWrap) shareWrap.style.display = (liveBroadcastPrivacy === 'offline') ? 'none' : 'grid';
+
+    showPage('match');
+    updateMatchUI();
+    if (liveBroadcastPrivacy !== 'offline') {
+        startHostingRoom(true);
+        pushLiveRoomUpdate(false);
+    }
+    return true;
+}
+
+function checkAndRestoreInterruptedMatch() {
+    if (isStrictSpectatorLinkMode) return false;
+    try {
+        var raw = localStorage.getItem('cric_active_match_autosave_v1');
+        if (!raw) return false;
+        var snap = JSON.parse(raw);
+        if (!snap || !snap.battingTeam || !snap.battingTeam.length) {
+            clearActiveMatchAutoSave();
+            return false;
+        }
+        if (snap.pausedAt && (Date.now() - snap.pausedAt) > DAY_MS) {
+            clearActiveMatchAutoSave();
+            return false;
+        }
+        if (hydrateMatchStateFromSnapshot(snap)) {
+            showToast('⚡ Live Match Resumed Automatically (' + snap.teamAName + ' vs ' + snap.teamBName + ')');
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
 window.addEventListener('beforeunload', function() {
     if (isStrictSpectatorLinkMode) return;
     if (matchActive) {
-        saveLiveState();
+        autoSaveBallByBallState();
         if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(true);
     }
     saveAll(true);
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden' && matchActive && !isStrictSpectatorLinkMode) {
+        autoSaveBallByBallState();
+        if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+    }
 });
 
 /* ================== UI NAVIGATION, SLIDE ANIMATIONS & THEMES ================== */
@@ -1386,6 +1541,7 @@ function confirmTeamOpeners() {
     else {
         cur = sIdx; nonStriker = nsIdx; curBowler = bIdx;
         updateMatchUI();
+        autoSaveBallByBallState();
         if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
         speakCommentary(pickRandomCommentary('start'));
     }
@@ -1422,6 +1578,7 @@ function confirmFFANextTurn() {
     else {
         cur = ffaCurrentBatterIdx; curBowler = bIdx; currOver = []; overRuns = 0; overWktsCount = 0; partnershipRuns = 0; partnershipBalls = 0; widesCount = 0; noBallsCount = 0; isFreeHit = false;
         updateMatchUI();
+        autoSaveBallByBallState();
         if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
         speakCommentary(pickRandomCommentary('start'));
     }
@@ -1433,6 +1590,7 @@ function initMatchEngine(batSq, bowlSq, strikerIdx, nonStrikerIdx, bowlerIdx) {
     currOver = []; allBalls = []; overByOver = []; overWickets = []; fowList = []; partnershipRuns = 0; partnershipBalls = 0;
     innings1 = null; isSecondInnings = false; targetToWin = 0; isFreeHit = false; wicketsDown = 0; overRuns = 0; overWktsCount = 0; widesCount = 0; noBallsCount = 0; undoStack = []; matchActive = true; activePausedMatchId = null;
     showPage('match'); updateMatchUI();
+    autoSaveBallByBallState();
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
     speakCommentary(pickRandomCommentary('start'));
 }
@@ -1478,6 +1636,7 @@ function undo() {
     if (banner) banner.style.display = 'none';
 
     updateMatchUI();
+    autoSaveBallByBallState();
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
     showToast('↩️ Last ball undone');
 }
@@ -1584,15 +1743,26 @@ function confirmWicket(howOut) {
     if (matchMode === 'ffa') {
         var remainingFFA = ffaPlayers.filter(function(p) { return !p.out; });
         if (remainingFFA.length === 0) finishFFAMatch();
-        else { updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); openFFAPickModal(); }
+        else {
+            updateMatchUI();
+            autoSaveBallByBallState();
+            if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+            openFFAPickModal();
+        }
         return;
     }
 
     var maxWkts = isSuperOver ? Math.min(2, battingTeam.length) : ((battingTeam.length === 1) ? 1 : (teamWicketRule === 'standard' ? Math.max(1, battingTeam.length - 1) : battingTeam.length));
-    if (wicketsDown >= maxWkts) { updateMatchUI(); endCurrentInnings(); return; }
+    if (wicketsDown >= maxWkts) {
+        updateMatchUI();
+        autoSaveBallByBallState();
+        endCurrentInnings();
+        return;
+    }
 
     var unbatted = battingTeam.map(function(p, i) { return (!p.out && i !== cur && i !== nonStriker) ? i : -1; }).filter(function(i) { return i !== -1; });
     if (unbatted.length > 0) {
+        autoSaveBallByBallState();
         document.getElementById('nextBatterList').innerHTML = unbatted.map(function(idx) {
             return '<button class="btn light uniform-btn" style="justify-content:space-between" onclick="selectNextBatter(' + idx + ')"><span>🏏 ' + battingTeam[idx].name + '</span><span style="font-size:9px;color:var(--gold)">SEND IN</span></button>';
         }).join('');
@@ -1611,7 +1781,13 @@ function selectNextBatter(idx) {
     checkPostBallProgress();
 }
 function swapStrikeInternal() { if (nonStriker === -1) return; var tmp = cur; cur = nonStriker; nonStriker = tmp; }
-function switchStrikeBtn() { if (nonStriker === -1) return showToast('⚠️ Solo batter'); swapStrikeInternal(); updateMatchUI(); if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false); }
+function switchStrikeBtn() {
+    if (nonStriker === -1) return showToast('⚠️ Solo batter');
+    swapStrikeInternal();
+    updateMatchUI();
+    autoSaveBallByBallState();
+    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+}
 function quickSwapRoles() { if (matchMode === '1v1') endCurrentInnings(); }
 
 function checkPostBallProgress(isExtra) {
@@ -1622,6 +1798,7 @@ function checkPostBallProgress(isExtra) {
         var overNum = Math.floor(legalBalls / 6);
         if (overNum >= maxOvers) {
             updateMatchUI();
+            autoSaveBallByBallState();
             if (matchMode === 'ffa') {
                 battingTeam[cur].out = true; battingTeam[cur].howOut = 'overs completed';
                 var remFFA = ffaPlayers.filter(function(p) { return !p.out; });
@@ -1637,6 +1814,7 @@ function checkPostBallProgress(isExtra) {
         currOver = []; overRuns = 0; overWktsCount = 0;
     }
     updateMatchUI();
+    autoSaveBallByBallState();
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
 }
 
@@ -1651,6 +1829,7 @@ function openChangeBowler() {
 function closeChangeBowler() { document.getElementById('changeBowlerModal').classList.remove('open'); }
 function selectBowler(idx) {
     curBowler = idx; closeChangeBowler(); updateMatchUI();
+    autoSaveBallByBallState();
     speakCommentary('New bowler comes into the attack.');
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
 }
@@ -1659,6 +1838,7 @@ function quickNextBowler() {
     curBowler = (curBowler + 1) % bowlingTeam.length;
     if (matchMode === 'ffa' && curBowler === cur) curBowler = (curBowler + 1) % bowlingTeam.length;
     updateMatchUI();
+    autoSaveBallByBallState();
     speakCommentary('Bowling change! New bowler takes the ball.');
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
 }
@@ -1673,9 +1853,11 @@ function endCurrentInnings() {
         if (matchMode === '1v1') {
             battingTeam = teamB; bowlingTeam = teamA; cur = 0; nonStriker = -1; curBowler = 0;
             updateMatchUI();
+            autoSaveBallByBallState();
             if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
             speakCommentary('Second innings begins! Target is ' + targetToWin + ' runs to win!');
         } else {
+            autoSaveBallByBallState();
             speakCommentary(pickRandomCommentary('inningsBreak'));
             openTeamOpenersModal(teamB, teamA);
         }
@@ -1731,6 +1913,7 @@ function finishFullMatch() {
         return;
     }
     matchActive = false;
+    clearActiveMatchAutoSave();
     var winner = 'Match Tied', marginText = 'Scores Level';
     if (inn2Runs >= targetToWin) {
         winner = teamBName + (isSuperOver ? ' Won Super Over' : ' Won');
@@ -1881,6 +2064,7 @@ function finishFFAMatch() {
     }
 
     matchActive = false;
+    clearActiveMatchAutoSave();
     var winner = sorted[0] ? sorted[0].name + (isSuperOver ? ' Won FFA Super Over' : ' Won (Solo FFA)') : 'Completed';
     var rec = { id: 'm_' + Date.now(), date: new Date().toLocaleDateString(), finishedAt: Date.now(), mode: 'ffa', privacy: liveBroadcastPrivacy, maxOvers: maxOvers, teamA: 'Solo Free-For-All', teamB: sorted.length + ' Players', inn1Score: 'Top: ' + (sorted[0] ? sorted[0].runs : 0) + ' runs', inn2Score: '', winner: winner, ffaData: JSON.parse(JSON.stringify(sorted)) };
     rec.mvp = computeMatchMVP(rec);
@@ -2136,20 +2320,8 @@ function renderBallTimelineFeed() {
 /* ================== PAUSE / RESUME (24H EXPIRY) & ABORT ================== */
 function saveLiveState() {
     if (!matchActive) return;
-    var stateObj = {
-        id: activePausedMatchId || ('pm_' + Date.now()),
-        savedAt: new Date().toLocaleTimeString(),
-        pausedAt: Date.now(),
-        hostRoomCode: hostRoomCode,
-        liveBroadcastPrivacy: liveBroadcastPrivacy,
-        matchMode: matchMode, teamWicketRule: teamWicketRule, teamAName: teamAName, teamBName: teamBName,
-        teamA: teamA, teamB: teamB, ffaPlayers: ffaPlayers, battingTeam: battingTeam, bowlingTeam: bowlingTeam,
-        cur: cur, nonStriker: nonStriker, curBowler: curBowler, currOver: currOver, allBalls: allBalls,
-        overByOver: overByOver, overWickets: overWickets, fowList: fowList, partnershipRuns: partnershipRuns,
-        partnershipBalls: partnershipBalls, overRuns: overRuns, overWktsCount: overWktsCount, isFreeHit: isFreeHit,
-        innings1: innings1, isSecondInnings: isSecondInnings, targetToWin: targetToWin, maxOvers: maxOvers,
-        wicketsDown: wicketsDown, widesCount: widesCount, noBallsCount: noBallsCount
-    };
+    var stateObj = buildActiveMatchSnapshot();
+    stateObj.id = activePausedMatchId || ('pm_' + Date.now());
     var idx = pausedMatches.findIndex(function(m) { return m.id === stateObj.id; });
     if (idx >= 0) pausedMatches[idx] = stateObj;
     else pausedMatches.unshift(stateObj);
@@ -2159,6 +2331,7 @@ function saveLiveState() {
 
 function pauseAndExitToHome() {
     saveLiveState();
+    clearActiveMatchAutoSave();
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(true);
     matchActive = false;
     showToast('⏸️ Match Paused! (Auto-clears after 24h)');
@@ -2168,20 +2341,10 @@ function pauseAndExitToHome() {
 function resumePausedMatch(id) {
     var m = pausedMatches.find(function(x) { return x.id === id; });
     if (!m) return;
-    activePausedMatchId = m.id;
-    hostRoomCode = m.hostRoomCode || hostRoomCode;
-    liveBroadcastPrivacy = m.liveBroadcastPrivacy || 'offline';
-    matchMode = m.matchMode; teamWicketRule = m.teamWicketRule || 'all_out';
-    teamAName = m.teamAName; teamBName = m.teamBName; teamA = m.teamA || []; teamB = m.teamB || []; ffaPlayers = m.ffaPlayers || [];
-    battingTeam = m.battingTeam; bowlingTeam = m.bowlingTeam; cur = m.cur; nonStriker = m.nonStriker; curBowler = m.curBowler;
-    currOver = m.currOver || []; allBalls = m.allBalls || []; overByOver = m.overByOver || []; overWickets = m.overWickets || [];
-    fowList = m.fowList || []; partnershipRuns = m.partnershipRuns || 0; partnershipBalls = m.partnershipBalls || 0;
-    overRuns = m.overRuns || 0; overWktsCount = m.overWktsCount || 0; isFreeHit = !!m.isFreeHit;
-    innings1 = m.innings1; isSecondInnings = m.isSecondInnings; targetToWin = m.targetToWin; maxOvers = m.maxOvers;
-    wicketsDown = m.wicketsDown; widesCount = m.widesCount || 0; noBallsCount = m.noBallsCount || 0; matchActive = true;
     pausedMatches = pausedMatches.filter(function(x) { return x.id !== id; });
-    saveAll(true); showPage('match'); updateMatchUI();
-    if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+    saveAll(true);
+    hydrateMatchStateFromSnapshot(m);
+    autoSaveBallByBallState();
     showToast('▶️ Match Resumed!');
 }
 
@@ -2284,6 +2447,7 @@ function confirmAbandonMatch() {
     openCustomConfirm('🗑️', 'ABORT MATCH?', 'Abort current live match and remove it from Live Hub?', 'ABORT MATCH', function() {
         matchActive = false;
         activeLeagueMatchMeta = null;
+        clearActiveMatchAutoSave();
         if (database && hostRoomCode) {
             try { database.ref('live_rooms/' + hostRoomCode).remove(); } catch (e) {}
         }
@@ -3104,7 +3268,6 @@ function rebuildPlayersAndCareerFromMatches(matchesArr) {
         });
     });
     players = builtPlayers;
-    // Recalculate career stats from oldest to newest match
     var chronological = (matchesArr || []).slice().reverse();
     chronological.forEach(function(rec) {
         applyMatchCareerDelta(rec, 1);
@@ -3151,7 +3314,6 @@ function cloudRestore(silent) {
 
     var emailStr = (currentGmailUser || (auth && auth.currentUser ? auth.currentUser.email : '')).trim().toLowerCase();
     var underscoreKey = emailStr.replace(/[.@]/g, '_');
-    // Exact key format shown in Firebase screenshot: nimthakalakidu12@gmail_com
     var atPreservedKey = emailStr.replace(/\./g, '_');
 
     var candidatePaths = [
@@ -3181,7 +3343,6 @@ function cloudRestore(silent) {
                 tryNextPath(idx + 1);
             }
         }).catch(function() {
-            // If a specific path lacks rule permission, skip cleanly to the next path
             tryNextPath(idx + 1);
         });
     }
@@ -3254,6 +3415,7 @@ function triggerDLSMethod() {
         if (!isNaN(parsed) && parsed > 0) {
             targetToWin = parsed;
             updateMatchUI();
+            autoSaveBallByBallState();
             if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
             showToast('🌧️ DLS Target: ' + targetToWin);
         }
@@ -3400,5 +3562,9 @@ window.addEventListener('DOMContentLoaded', function() {
         navigator.serviceWorker.register('./sw.js').catch(function() {});
     }
     var roomParam = new URLSearchParams(window.location.search).get('room');
-    if (roomParam) openFullSpectatorScreen(roomParam, true);
+    if (roomParam) {
+        openFullSpectatorScreen(roomParam, true);
+    } else {
+        checkAndRestoreInterruptedMatch();
+    }
 });
