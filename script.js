@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js)
+   CRIC CLASH • PRO LIQUID BROADCAST EDITION (COMPLETE script.js - V2 FIXED)
    ========================================================================== */
 
 const firebaseConfig = {
@@ -1910,8 +1910,8 @@ function applyMatchCareerDelta(rec, sign) {
             var ffaPl = rec.ffaData.find(function(x) { return x.id === pl.id || x.name === pl.name; });
             if (ffaPl) { foundBat = ffaPl; foundBowl = ffaPl; }
         } else if (rec.inn1Data && rec.inn2Data) {
-            foundBat = rec.inn1Data.batting.find(function(x) { return x.id === pl.id || x.name === pl.name; }) || rec.inn2Data.batting.find(function(x) { return x.id === pl.id || x.name === pl.name; });
-            foundBowl = rec.inn1Data.bowling.find(function(x) { return x.id === pl.id || x.name === pl.name; }) || rec.inn2Data.bowling.find(function(x) { return x.id === pl.id || x.name === pl.name; });
+            foundBat = (rec.inn1Data.batting || []).find(function(x) { return x.id === pl.id || x.name === pl.name; }) || (rec.inn2Data.batting || []).find(function(x) { return x.id === pl.id || x.name === pl.name; });
+            foundBowl = (rec.inn1Data.bowling || []).find(function(x) { return x.id === pl.id || x.name === pl.name; }) || (rec.inn2Data.bowling || []).find(function(x) { return x.id === pl.id || x.name === pl.name; });
         }
         if (foundBat || foundBowl) {
             pl.career.matches = Math.max(0, (pl.career.matches || 0) + (1 * sign));
@@ -2986,14 +2986,14 @@ function cloudBackup(silent) {
 
 function normalizeLegacyMatchItem(rawItem, index) {
     if (!rawItem || typeof rawItem !== 'object') return null;
-    if (rawItem.teamA && rawItem.teamB && rawItem.inn1Score) return rawItem;
+    if (rawItem.teamA && rawItem.teamB && rawItem.inn1Score && rawItem.inn1Data) return rawItem;
 
     var tA = rawItem.batter1 || rawItem.teamA || 'Team A';
     var tB = rawItem.batter2 || rawItem.teamB || 'Team B';
     var sc1 = rawItem.batter1Runs || rawItem.inn1Score || '0/0';
     var sc2 = rawItem.batter2Runs || rawItem.inn2Score || '';
-    var b1 = rawItem.batter1Balls || 0;
-    var b2 = rawItem.batter2Balls || 0;
+    var b1 = Number(rawItem.batter1Balls || 0);
+    var b2 = Number(rawItem.batter2Balls || 0);
     var dt = rawItem.date || rawItem.timestamp || new Date().toLocaleDateString();
 
     function mapBatters(list) {
@@ -3028,6 +3028,17 @@ function normalizeLegacyMatchItem(rawItem, index) {
     }
 
     var winnerTxt = (rawItem.awards && rawItem.awards.winner) ? rawItem.awards.winner : (rawItem.winner || (tA + ' vs ' + tB));
+    var inn1Bat = mapBatters(rawItem.inn1Batters);
+    var inn1Bowl = mapBowlers(rawItem.inn1Bowlers);
+    var inn2Bat = mapBatters(rawItem.inn2Batters);
+    var inn2Bowl = mapBowlers(rawItem.inn2Bowlers);
+
+    if (!inn1Bat.length && tA && tA !== 'Team A') {
+        inn1Bat.push({ id: 'leg_b1_' + index, name: tA, runs: parseInt(String(sc1).split('/')[0]) || 0, balls: b1, fours: 0, sixes: 0, out: false, howOut: '' });
+    }
+    if (!inn2Bat.length && tB && tB !== 'Team B' && sc2) {
+        inn2Bat.push({ id: 'leg_b2_' + index, name: tB, runs: parseInt(String(sc2).split('/')[0]) || 0, balls: b2, fours: 0, sixes: 0, out: false, howOut: '' });
+    }
 
     return {
         id: 'leg_m_' + index + '_' + Date.now(),
@@ -3047,8 +3058,8 @@ function normalizeLegacyMatchItem(rawItem, index) {
             balls: b1,
             extras: Number(rawItem.inn1Extras || 0),
             fow: [],
-            batting: mapBatters(rawItem.inn1Batters),
-            bowling: mapBowlers(rawItem.inn1Bowlers)
+            batting: inn1Bat,
+            bowling: inn1Bowl
         },
         inn2Data: sc2 ? {
             teamName: tB,
@@ -3058,13 +3069,13 @@ function normalizeLegacyMatchItem(rawItem, index) {
             balls: b2,
             extras: Number(rawItem.inn2Extras || 0),
             fow: [],
-            batting: mapBatters(rawItem.inn2Batters),
-            bowling: mapBowlers(rawItem.inn2Bowlers)
+            batting: inn2Bat,
+            bowling: inn2Bowl
         } : null
     };
 }
 
-function extractPlayersFromMatchList(matchesArr) {
+function rebuildPlayersAndCareerFromMatches(matchesArr) {
     var seen = {};
     var builtPlayers = [];
     (matchesArr || []).forEach(function(m) {
@@ -3073,12 +3084,13 @@ function extractPlayersFromMatchList(matchesArr) {
         if (m.inn2Data) pools = pools.concat(m.inn2Data.batting || [], m.inn2Data.bowling || []);
         pools.forEach(function(p) {
             if (!p || !p.name) return;
-            var key = p.name.trim().toLowerCase();
-            if (!key || seen[key]) return;
+            var cleanName = p.name.trim();
+            var key = cleanName.toLowerCase();
+            if (!key || key === 'team a' || key === 'team b' || seen[key]) return;
             seen[key] = true;
             builtPlayers.push({
                 id: 'pl_' + key.replace(/[^a-z0-9]/g, '_'),
-                name: p.name.trim(),
+                name: cleanName,
                 avatar: null,
                 theme: '#f5c542',
                 career: {
@@ -3091,7 +3103,12 @@ function extractPlayersFromMatchList(matchesArr) {
             });
         });
     });
-    return builtPlayers;
+    players = builtPlayers;
+    // Recalculate career stats from oldest to newest match
+    var chronological = (matchesArr || []).slice().reverse();
+    chronological.forEach(function(rec) {
+        applyMatchCareerDelta(rec, 1);
+    });
 }
 
 function applyRestoredPayload(d, silent) {
@@ -3103,7 +3120,7 @@ function applyRestoredPayload(d, silent) {
     } else if (d.players && typeof d.players === 'object' && Object.keys(d.players).length > 0) {
         players = Object.values(d.players);
     } else {
-        players = extractPlayersFromMatchList(matchHistory);
+        rebuildPlayersAndCareerFromMatches(matchHistory);
     }
 
     leagues = Array.isArray(d.leagues) ? d.leagues : (d.leagues ? Object.values(d.leagues) : []);
@@ -3126,24 +3143,6 @@ function applyRestoredPayload(d, silent) {
     if (!silent) showToast('✅ Restored ' + players.length + ' Players & ' + matchHistory.length + ' Matches!');
 }
 
-function findUserNodeInObject(obj, targetEmail, emailKey) {
-    if (!obj || typeof obj !== 'object') return null;
-    if (obj[emailKey]) return obj[emailKey];
-    if (obj[targetEmail]) return obj[targetEmail];
-    var keys = Object.keys(obj);
-    for (var i = 0; i < keys.length; i++) {
-        var k = keys[i];
-        var val = obj[k];
-        if (!val || typeof val !== 'object') continue;
-        var kl = k.toLowerCase();
-        var itemEmail = (val.email || '').toLowerCase();
-        if (kl === emailKey.toLowerCase() || kl === targetEmail.toLowerCase() || kl.includes(emailKey.toLowerCase()) || itemEmail === targetEmail.toLowerCase() || kl.includes(targetEmail.split('@')[0])) {
-            if (val.history || val.matchHistory || val.players) return val;
-        }
-    }
-    return null;
-}
-
 function cloudRestore(silent) {
     if (!database) return showToast('⚠️ Database offline');
     if (!currentGmailUser && !(auth && auth.currentUser)) {
@@ -3151,34 +3150,43 @@ function cloudRestore(silent) {
     }
 
     var emailStr = (currentGmailUser || (auth && auth.currentUser ? auth.currentUser.email : '')).trim().toLowerCase();
-    var emailKey = emailStr.replace(/[.@]/g, '_');
+    var underscoreKey = emailStr.replace(/[.@]/g, '_');
+    // Exact key format shown in Firebase screenshot: nimthakalakidu12@gmail_com
+    var atPreservedKey = emailStr.replace(/\./g, '_');
 
-    if (!silent) showToast('🔄 Searching cloud database...');
+    var candidatePaths = [
+        'user_backups/' + underscoreKey,
+        'user_backups/' + atPreservedKey,
+        'backups/' + underscoreKey,
+        'backups/' + atPreservedKey,
+        'users/' + underscoreKey,
+        'users/' + atPreservedKey,
+        atPreservedKey,
+        underscoreKey
+    ];
 
-    database.ref('/').once('value').then(function(rootSnap) {
-        var rootVal = rootSnap.val() || {};
-        var foundNode =
-            findUserNodeInObject(rootVal, emailStr, emailKey) ||
-            findUserNodeInObject(rootVal.user_backups, emailStr, emailKey) ||
-            findUserNodeInObject(rootVal.backups, emailStr, emailKey) ||
-            findUserNodeInObject(rootVal.users, emailStr, emailKey);
+    if (!silent) showToast('🔄 Restoring cloud data...');
 
-        if (!foundNode) {
-            Object.keys(rootVal).forEach(function(topKey) {
-                if (!foundNode && rootVal[topKey] && typeof rootVal[topKey] === 'object') {
-                    foundNode = findUserNodeInObject(rootVal[topKey], emailStr, emailKey);
-                }
-            });
+    function tryNextPath(idx) {
+        if (idx >= candidatePaths.length) {
+            if (!silent) showToast('⚠️ No backup found for ' + emailStr);
+            return;
         }
+        var path = candidatePaths[idx];
+        database.ref(path).once('value').then(function(snap) {
+            var val = snap.val();
+            if (val && typeof val === 'object' && !Array.isArray(val) && (val.history || val.matchHistory || val.players)) {
+                applyRestoredPayload(val, silent);
+            } else {
+                tryNextPath(idx + 1);
+            }
+        }).catch(function() {
+            // If a specific path lacks rule permission, skip cleanly to the next path
+            tryNextPath(idx + 1);
+        });
+    }
 
-        if (foundNode && (foundNode.history || foundNode.matchHistory || foundNode.players)) {
-            applyRestoredPayload(foundNode, silent);
-        } else if (!silent) {
-            showToast('⚠️ No backup found for ' + emailStr);
-        }
-    }).catch(function(err) {
-        if (!silent) showToast('⚠️ Restore error: ' + err.message);
-    });
+    tryNextPath(0);
 }
 
 function deleteCloudDataOnly() {
@@ -3311,28 +3319,13 @@ function installPWA() {
     });
 }
 
-window.addEventListener('DOMContentLoaded', function() {
-    loadPersistentData();
-    setAppTheme(settings.appTheme || 'oled');
-    ['voice', 'sfx', 'autoSave'].forEach(function(k) {
-        var el = document.getElementById(k + 'Toggle');
-        if (el) el.classList.toggle('on', !!settings[k]);
-    });
-    renderThemeChips('themeSelector', selectedTheme, 'selectTheme');
-    updateAuthUI();
-    refreshHomeUI();
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(function() {});
-    }
-    var roomParam = new URLSearchParams(window.location.search).get('room');
-    if (roomParam) openFullSpectatorScreen(roomParam, true);
-});
-
 /* ==========================================================================
    CRIC CLASH • ADMIN PRESENCE & USER MONITOR HOOK
    ========================================================================== */
-(function initCricClashAdminMonitor() {
-    if (!database) return;
+var adminMonitorStarted = false;
+function startCricClashAdminMonitor() {
+    if (!database || adminMonitorStarted) return;
+    adminMonitorStarted = true;
 
     var deviceUid = localStorage.getItem('cc_device_uid');
     if (!deviceUid) {
@@ -3361,7 +3354,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 userRef.onDisconnect().update({
                     online: false,
                     lastSeen: firebase.database.ServerValue.TIMESTAMP
-                });
+                }).catch(function() {});
 
                 userRef.update({
                     id: key,
@@ -3373,7 +3366,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     matchesCount: totalAllTimeMatches,
                     online: true,
                     lastSeen: firebase.database.ServerValue.TIMESTAMP
-                });
+                }).catch(function() {});
             }
         });
 
@@ -3384,13 +3377,28 @@ window.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    window.addEventListener('load', function() {
-        setTimeout(syncPresenceToAdmin, 1200);
-    });
-
+    syncPresenceToAdmin();
     if (auth) {
         auth.onAuthStateChanged(function() {
             syncPresenceToAdmin();
         });
     }
-})();
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    loadPersistentData();
+    setAppTheme(settings.appTheme || 'oled');
+    ['voice', 'sfx', 'autoSave'].forEach(function(k) {
+        var el = document.getElementById(k + 'Toggle');
+        if (el) el.classList.toggle('on', !!settings[k]);
+    });
+    renderThemeChips('themeSelector', selectedTheme, 'selectTheme');
+    updateAuthUI();
+    refreshHomeUI();
+    startCricClashAdminMonitor();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
+    var roomParam = new URLSearchParams(window.location.search).get('room');
+    if (roomParam) openFullSpectatorScreen(roomParam, true);
+});
