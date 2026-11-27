@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -622,11 +621,24 @@
   <div class="modal-content holo-card" style="padding:18px;padding-top:44px;text-align:center" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeLeagueFirstBatModal()">✕</button>
     <div style="font-size:30px;margin-bottom:4px">🏏</div>
-    <div style="font-size:9px;font-weight:900;color:var(--gold);letter-spacing:1px">SELECT 1ST INNINGS BATTER</div>
-    <div id="leagueMatchupTitle" style="font-size:16px;font-weight:900;color:#fff;margin:4px 0 14px">Player 1 vs Player 2</div>
+    <div style="font-size:9px;font-weight:900;color:var(--gold);letter-spacing:1px">SELECT FIRST BATTER</div>
+    <div id="leagueFirstBatMatchTitle" style="font-size:16px;font-weight:900;color:#fff;margin:4px 0 14px">Player 1 vs Player 2</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="leagueBatFirstBtn1" class="btn gold uniform-btn" onclick="startLeagueWithFirstBatter('p1')">🏏 PLAYER 1 BATS FIRST</button>
-      <button id="leagueBatFirstBtn2" class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="startLeagueWithFirstBatter('p2')">🏏 PLAYER 2 BATS FIRST</button>
+      <button id="leagueFirstBatBtnP1" class="btn gold uniform-btn" onclick="confirmLeagueFirstBatter('p1')">🏏 PLAYER 1 BATS FIRST</button>
+      <button id="leagueFirstBatBtnP2" class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="confirmLeagueFirstBatter('p2')">🏏 PLAYER 2 BATS FIRST</button>
+    </div>
+  </div>
+</div>
+
+<div id="inningsEndConfirmModal" class="modal">
+  <div class="modal-content holo-card" style="padding:20px;padding-top:30px;text-align:center" onclick="event.stopPropagation()">
+    <div style="font-size:38px;margin-bottom:4px">🏁</div>
+    <div id="inningsEndReasonBadge" class="badge gold" style="font-size:9px;padding:3px 10px">INNINGS COMPLETE</div>
+    <div id="inningsEndTeamScore" style="font-size:20px;font-family:'Space Grotesk',sans-serif;font-weight:900;color:#fff;margin:10px 0 6px">Team A: 0/0</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:16px">Confirm to continue, or undo if the last wicket/ball was a mistake.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="inningsEndProceedBtn" class="btn gold uniform-btn" onclick="proceedFromInningsEndModal()">🏏 START 2ND INNINGS →</button>
+      <button class="btn red uniform-btn" onclick="undoFromInningsEndModal()">↩️ UNDO LAST BALL (MISTAKE)</button>
     </div>
   </div>
 </div>

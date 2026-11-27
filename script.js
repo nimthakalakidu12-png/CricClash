@@ -2739,26 +2739,47 @@ function createLeague() {
     showToast('🏆 Tournament Created with Schedule & Points Table!');
 }
 
+var pendingLeagueMatchData = null;
+
 function playLeagueFixture(leagueId, fixtureId) {
     var lg = leagues.find(function(x) { return x.id === leagueId; });
     if (!lg) return;
     var fx = lg.fixtures.find(function(f) { return f.id === fixtureId; });
     if (!fx || fx.played) return;
 
-    var p1Obj = players.find(function(p) { return p.name === fx.p1; }) || { id: 'lgp1', name: fx.p1, theme: '#f5c542' };
-    var p2Obj = players.find(function(p) { return p.name === fx.p2; }) || { id: 'lgp2', name: fx.p2, theme: '#0a84ff' };
+    pendingLeagueMatchData = { leagueId: lg.id, fixtureId: fx.id, overs: lg.overs || 2, p1: fx.p1, p2: fx.p2 };
+    document.getElementById('leagueFirstBatMatchTitle').textContent = fx.p1 + ' vs ' + fx.p2;
+    document.getElementById('leagueFirstBatBtnP1').textContent = '🏏 ' + fx.p1.toUpperCase() + ' BATS FIRST';
+    document.getElementById('leagueFirstBatBtnP2').textContent = '🏏 ' + fx.p2.toUpperCase() + ' BATS FIRST';
+    document.getElementById('leagueFirstBatModal').classList.add('open');
+}
+
+function closeLeagueFirstBatModal() {
+    document.getElementById('leagueFirstBatModal').classList.remove('open');
+}
+
+function confirmLeagueFirstBatter(choice) {
+    if (!pendingLeagueMatchData) return;
+    var d = pendingLeagueMatchData;
+    closeLeagueFirstBatModal();
+
+    var firstName = (choice === 'p2') ? d.p2 : d.p1;
+    var secondName = (choice === 'p2') ? d.p1 : d.p2;
+
+    var p1Obj = players.find(function(p) { return p.name === firstName; }) || { id: 'lgp1', name: firstName, theme: '#f5c542' };
+    var p2Obj = players.find(function(p) { return p.name === secondName; }) || { id: 'lgp2', name: secondName, theme: '#0a84ff' };
 
     matchMode = '1v1';
-    maxOvers = lg.overs || 2;
+    maxOvers = d.overs || 2;
     teamAName = p1Obj.name;
     teamBName = p2Obj.name;
     teamA = [createMatchPlayerObj(p1Obj)];
     teamB = [createMatchPlayerObj(p2Obj)];
     isSuperOver = false;
-    activeLeagueMatchMeta = { leagueId: lg.id, fixtureId: fx.id };
+    activeLeagueMatchMeta = { leagueId: d.leagueId, fixtureId: d.fixtureId };
 
     document.getElementById('broadcastModePromptModal').classList.add('open');
-    showToast('🏏 ' + fx.p1 + ' bats first vs ' + fx.p2 + '!');
+    showToast('🏏 ' + firstName + ' bats first vs ' + secondName + '!');
 }
 
 function recordLeagueFixtureResult(leagueId, fixtureId, rec) {
