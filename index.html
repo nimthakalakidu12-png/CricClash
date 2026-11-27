@@ -617,6 +617,19 @@
 </div>
 
 <!-- MODALS -->
+<div id="inningsEndConfirmModal" class="modal">
+  <div class="modal-content holo-card" style="padding:20px;padding-top:30px;text-align:center" onclick="event.stopPropagation()">
+    <div style="font-size:38px;margin-bottom:4px">🏁</div>
+    <div id="inningsEndReasonBadge" class="badge gold" style="font-size:9px;padding:3px 10px">INNINGS COMPLETE</div>
+    <div id="inningsEndTeamScore" style="font-size:20px;font-family:'Space Grotesk',sans-serif;font-weight:900;color:#fff;margin:10px 0 6px">Team A: 0/0</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:16px">Confirm to continue, or undo if the last wicket/ball was a mistake.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="inningsEndProceedBtn" class="btn gold uniform-btn" onclick="proceedFromInningsEndModal()">🏏 START 2ND INNINGS →</button>
+      <button class="btn red uniform-btn" onclick="undoFromInningsEndModal()">↩️ UNDO LAST BALL (MISTAKE)</button>
+    </div>
+  </div>
+</div>
+
 <div id="broadcastModePromptModal" class="modal" onclick="closeBroadcastPromptModal()">
   <div class="modal-content" style="padding:18px;padding-top:44px;text-align:center" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeBroadcastPromptModal()">✕</button>
