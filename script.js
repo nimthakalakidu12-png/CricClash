@@ -1742,8 +1742,11 @@ function confirmWicket(howOut) {
 
     if (matchMode === 'ffa') {
         var remainingFFA = ffaPlayers.filter(function(p) { return !p.out; });
-        if (remainingFFA.length === 0) finishFFAMatch();
-        else {
+        if (remainingFFA.length === 0) {
+            updateMatchUI();
+            autoSaveBallByBallState();
+            promptInningsEndWithUndo('ALL FFA PLAYERS OUT');
+        } else {
             updateMatchUI();
             autoSaveBallByBallState();
             if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
@@ -1756,7 +1759,7 @@ function confirmWicket(howOut) {
     if (wicketsDown >= maxWkts) {
         updateMatchUI();
         autoSaveBallByBallState();
-        endCurrentInnings();
+        promptInningsEndWithUndo('ALL OUT (' + wicketsDown + ' Wickets)');
         return;
     }
 
@@ -1802,9 +1805,9 @@ function checkPostBallProgress(isExtra) {
             if (matchMode === 'ffa') {
                 battingTeam[cur].out = true; battingTeam[cur].howOut = 'overs completed';
                 var remFFA = ffaPlayers.filter(function(p) { return !p.out; });
-                if (remFFA.length === 0) finishFFAMatch();
+                if (remFFA.length === 0) promptInningsEndWithUndo('ALL PLAYERS COMPLETED');
                 else openFFAPickModal();
-            } else endCurrentInnings();
+            } else promptInningsEndWithUndo(maxOvers + ' OVERS COMPLETED');
             return;
         }
         document.getElementById('overSummaryTitle').textContent = 'END OF OVER ' + overNum;
@@ -1841,6 +1844,40 @@ function quickNextBowler() {
     autoSaveBallByBallState();
     speakCommentary('Bowling change! New bowler takes the ball.');
     if (liveBroadcastPrivacy !== 'offline') pushLiveRoomUpdate(false);
+}
+
+function promptInningsEndWithUndo(reasonText) {
+    var modal = document.getElementById('inningsEndConfirmModal');
+    if (!modal) {
+        if (matchMode === 'ffa') finishFFAMatch();
+        else endCurrentInnings();
+        return;
+    }
+    var batName = (matchMode === 'ffa') ? 'Solo FFA' : (isSecondInnings ? teamBName : teamAName);
+    var scoreLine = getTotalRuns() + '/' + wicketsDown + ' (' + formatOvers(getLegalBallsCount()) + ' ov)';
+    document.getElementById('inningsEndReasonBadge').textContent = reasonText || 'INNINGS COMPLETE';
+    document.getElementById('inningsEndTeamScore').textContent = batName + ': ' + scoreLine;
+
+    var nextBtn = document.getElementById('inningsEndProceedBtn');
+    if (matchMode === 'ffa' || isSecondInnings) {
+        nextBtn.textContent = '🏆 FINISH MATCH & VIEW RESULT →';
+    } else {
+        nextBtn.textContent = '🏏 START 2ND INNINGS (' + teamBName + ') →';
+    }
+    modal.classList.add('open');
+}
+
+function undoFromInningsEndModal() {
+    var modal = document.getElementById('inningsEndConfirmModal');
+    if (modal) modal.classList.remove('open');
+    undo();
+}
+
+function proceedFromInningsEndModal() {
+    var modal = document.getElementById('inningsEndConfirmModal');
+    if (modal) modal.classList.remove('open');
+    if (matchMode === 'ffa') finishFFAMatch();
+    else endCurrentInnings();
 }
 
 function endCurrentInnings() {
@@ -2087,15 +2124,64 @@ function finishFFAMatch() {
 }
 function closeFFAPodium() { document.getElementById('ffaPodiumModal').classList.remove('open'); }
 
+function matchPlayerIdentity(entry, pl) {
+    if (!entry || !pl) return false;
+    if (entry.id && pl.id && entry.id === pl.id) return true;
+    var n1 = (entry.name || '').trim().toLowerCase();
+    var n2 = (pl.name || '').trim().toLowerCase();
+    return Boolean(n1 && n2 && n1 === n2);
+}
+
+function recalculatePlayerDerivedRecords(pl) {
+    if (!pl || !pl.career) return;
+    var bestScore = 0, curStreak = 0, maxStreak = 0, hasSixBlitz = false;
+    var formItems = [];
+    var chrono = matchHistory.slice().reverse();
+    chrono.forEach(function(m) {
+        var bEntry = null;
+        if (m.mode === 'ffa' && m.ffaData) {
+            bEntry = m.ffaData.find(function(x) { return matchPlayerIdentity(x, pl); });
+        } else {
+            if (m.inn1Data && m.inn1Data.batting) bEntry = m.inn1Data.batting.find(function(x) { return matchPlayerIdentity(x, pl); });
+            if (!bEntry && m.inn2Data && m.inn2Data.batting) bEntry = m.inn2Data.batting.find(function(x) { return matchPlayerIdentity(x, pl); });
+        }
+        if (bEntry) {
+            var r = bEntry.runs || 0;
+            if (r > bestScore) bestScore = r;
+            if ((bEntry.sixes || 0) >= 6) hasSixBlitz = true;
+            formItems.push(r + '(' + (bEntry.balls || 0) + ')');
+            var pLow = (pl.name || '').trim().toLowerCase();
+            var wLow = (m.winner || '').toLowerCase();
+            if (pLow && wLow.includes(pLow)) {
+                curStreak++;
+                if (curStreak > maxStreak) maxStreak = curStreak;
+            } else {
+                curStreak = 0;
+            }
+        }
+    });
+    pl.career.best = bestScore;
+    pl.career.streak = curStreak;
+    pl.career.maxStreak = maxStreak;
+    pl.career.sixBlitz = hasSixBlitz;
+    pl.career.form = formItems.slice(-10);
+}
+
 function applyMatchCareerDelta(rec, sign) {
     players.forEach(function(pl) {
         var foundBat = null, foundBowl = null;
         if (rec.mode === 'ffa' && rec.ffaData) {
-            var ffaPl = rec.ffaData.find(function(x) { return x.id === pl.id || x.name === pl.name; });
+            var ffaPl = rec.ffaData.find(function(x) { return matchPlayerIdentity(x, pl); });
             if (ffaPl) { foundBat = ffaPl; foundBowl = ffaPl; }
-        } else if (rec.inn1Data && rec.inn2Data) {
-            foundBat = (rec.inn1Data.batting || []).find(function(x) { return x.id === pl.id || x.name === pl.name; }) || (rec.inn2Data.batting || []).find(function(x) { return x.id === pl.id || x.name === pl.name; });
-            foundBowl = (rec.inn1Data.bowling || []).find(function(x) { return x.id === pl.id || x.name === pl.name; }) || (rec.inn2Data.bowling || []).find(function(x) { return x.id === pl.id || x.name === pl.name; });
+        } else {
+            if (rec.inn1Data) {
+                foundBat = (rec.inn1Data.batting || []).find(function(x) { return matchPlayerIdentity(x, pl); }) || foundBat;
+                foundBowl = (rec.inn1Data.bowling || []).find(function(x) { return matchPlayerIdentity(x, pl); }) || foundBowl;
+            }
+            if (rec.inn2Data) {
+                foundBat = (rec.inn2Data.batting || []).find(function(x) { return matchPlayerIdentity(x, pl); }) || foundBat;
+                foundBowl = (rec.inn2Data.bowling || []).find(function(x) { return matchPlayerIdentity(x, pl); }) || foundBowl;
+            }
         }
         if (foundBat || foundBowl) {
             pl.career.matches = Math.max(0, (pl.career.matches || 0) + (1 * sign));
@@ -2104,13 +2190,12 @@ function applyMatchCareerDelta(rec, sign) {
                 pl.career.balls = Math.max(0, (pl.career.balls || 0) + ((foundBat.balls || 0) * sign));
                 pl.career.fours = Math.max(0, (pl.career.fours || 0) + ((foundBat.fours || 0) * sign));
                 pl.career.sixes = Math.max(0, (pl.career.sixes || 0) + ((foundBat.sixes || 0) * sign));
-                if (sign > 0 && (foundBat.runs || 0) > (pl.career.best || 0)) pl.career.best = foundBat.runs;
                 if ((foundBat.runs || 0) >= 50 && (foundBat.runs || 0) < 100) pl.career.fifties = Math.max(0, (pl.career.fifties || 0) + (1 * sign));
                 if ((foundBat.runs || 0) >= 100) pl.career.hundreds = Math.max(0, (pl.career.hundreds || 0) + (1 * sign));
+                if (sign > 0 && (foundBat.runs || 0) > (pl.career.best || 0)) pl.career.best = foundBat.runs;
                 if (sign > 0 && (foundBat.sixes || 0) >= 6) pl.career.sixBlitz = true;
                 if (!pl.career.form) pl.career.form = [];
                 if (sign > 0) pl.career.form.push((foundBat.runs || 0) + '(' + (foundBat.balls || 0) + ')');
-                else pl.career.form.pop();
             }
             if (foundBowl) {
                 pl.career.wickets = Math.max(0, (pl.career.wickets || 0) + ((foundBowl.wicketsTaken || 0) * sign));
@@ -2118,13 +2203,26 @@ function applyMatchCareerDelta(rec, sign) {
                 pl.career.runsConceded = Math.max(0, (pl.career.runsConceded || 0) + ((foundBowl.runsConceded || 0) * sign));
                 if ((foundBowl.wicketsTaken || 0) >= 5) pl.career.fiveWicketHauls = Math.max(0, (pl.career.fiveWicketHauls || 0) + (1 * sign));
             }
-            if (rec.winner && rec.winner.includes(pl.name)) {
+            var pLow = (pl.name || '').trim().toLowerCase();
+            var wLow = (rec.winner || '').toLowerCase();
+            var isTeamAPlayer = rec.inn1Data && (rec.inn1Data.batting || []).some(function(x) { return matchPlayerIdentity(x, pl); });
+            var isTeamBPlayer = rec.inn2Data && (rec.inn2Data.batting || []).some(function(x) { return matchPlayerIdentity(x, pl); });
+            var wonMatch = (pLow && wLow.includes(pLow)) ||
+                (isTeamAPlayer && rec.teamA && wLow.includes(rec.teamA.toLowerCase())) ||
+                (isTeamBPlayer && rec.teamB && wLow.includes(rec.teamB.toLowerCase()));
+
+            if (wonMatch) {
                 pl.career.wins = Math.max(0, (pl.career.wins || 0) + (1 * sign));
                 if (sign > 0) {
                     pl.career.streak = (pl.career.streak || 0) + 1;
                     if (pl.career.streak > (pl.career.maxStreak || 0)) pl.career.maxStreak = pl.career.streak;
                 }
-            } else if (sign > 0) pl.career.streak = 0;
+            } else if (sign > 0) {
+                pl.career.streak = 0;
+            }
+            if (sign < 0) {
+                recalculatePlayerDerivedRecords(pl);
+            }
             checkAndAwardBadges(pl);
         }
     });
@@ -2402,11 +2500,11 @@ function deleteSingleMatchFromHistory(idx) {
     var m = matchHistory[idx];
     if (!m) return;
     openCustomConfirm('🗑️', 'DELETE MATCH?', 'Delete "' + m.teamA + ' vs ' + m.teamB + '" and deduct its stats from career records?', 'DELETE', function() {
-        applyMatchCareerDelta(m, -1);
         matchHistory.splice(idx, 1);
+        applyMatchCareerDelta(m, -1);
         totalAllTimeMatches = Math.max(0, totalAllTimeMatches - 1);
-        saveAll(); renderMatchHistory(); refreshHomeUI();
-        showToast('🗑️ Match deleted');
+        saveAll(); renderMatchHistory(); renderProfiles(); refreshHomeUI();
+        showToast('🗑️ Match deleted & career stats updated');
     });
 }
 
@@ -2660,7 +2758,7 @@ function playLeagueFixture(leagueId, fixtureId) {
     activeLeagueMatchMeta = { leagueId: lg.id, fixtureId: fx.id };
 
     document.getElementById('broadcastModePromptModal').classList.add('open');
-    showToast('🏆 League Clash: ' + fx.p1 + ' vs ' + fx.p2);
+    showToast('🏏 ' + fx.p1 + ' bats first vs ' + fx.p2 + '!');
 }
 
 function recordLeagueFixtureResult(leagueId, fixtureId, rec) {
@@ -2764,7 +2862,7 @@ function renderLeagues() {
                     '<span class="badge dark" style="color:#00e676">✓ DONE</span></div>';
             }
             return '<div style="padding:7px 9px;background:var(--pill-bg);border:1px solid ' + (isFinal ? 'var(--gold)' : 'var(--border)') + ';border-radius:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">' +
-                '<div>' + stageBadge + ' <b style="font-size:11px;margin-left:4px">' + fx.p1 + ' vs ' + fx.p2 + '</b></div>' +
+                '<div>' + stageBadge + ' <b style="font-size:11px;margin-left:4px">' + fx.p1 + ' vs ' + fx.p2 + '</b><div style="font-size:8px;color:var(--gold);margin-top:2px">🏏 1st Bat: ' + fx.p1 + ' • 🎯 Bowl: ' + fx.p2 + '</div></div>' +
                 '<button class="btn gold" style="padding:5px 10px;font-size:9px" onclick="playLeagueFixture(\'' + lg.id + '\',\'' + fx.id + '\')">▶ PLAY</button></div>';
         }).join('');
 
