@@ -259,3 +259,118 @@ select option { background: #0c0d14; color: #fff; }
 .qr-frame img { width: 135px; height: 135px; display: block; }
 .pro-score-table td:first-child { max-width: 125px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #batterName, #nsName, #bowlerName { max-width: 185px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ================== V4 MOBILE & WEBVIEW UI POLISH ================== */
+.app {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(115px + env(safe-area-inset-bottom, 0px));
+}
+.nav {
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.floating-hud {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.modal {
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.modal-content {
+  max-height: 85dvh;
+  -webkit-overflow-scrolling: touch;
+}
+.glass > *, .jumbotron > * {
+  min-width: 0;
+}
+.tab-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+.tab-bar .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.team-header-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px 28px;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.team-header-grid input[type="text"] {
+  min-width: 0;
+  padding: 6px 8px;
+}
+.pro-score-table {
+  table-layout: auto;
+  width: 100%;
+}
+#currentOverDots {
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+#currentOverDots::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 380px) {
+  .app { padding-left: 9px; padding-right: 9px; }
+  .jumbo-score { font-size: 34px; }
+  .score-pad-btn { height: 46px; font-size: 14px; }
+  .nav button { font-size: 8px; padding: 7px 6px; }
+  .btn { padding: 8px 9px; font-size: 10px; }
+}
+
+/* ================== V5 ADVANCED FIRST-BATTER & TEAM TOURNAMENT UI ================== */
+.first-bat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 10px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(10,12,20,0.85));
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.first-bat-card:hover, .first-bat-card:active {
+  transform: translateY(-2px) scale(0.98);
+  border-color: var(--gold);
+  box-shadow: 0 10px 24px rgba(245, 197, 66, 0.22);
+}
+.first-bat-card .fb-cta {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: #111;
+}
+.first-bat-card.p2-accent:hover, .first-bat-card.p2-accent:active {
+  border-color: var(--cyan);
+  box-shadow: 0 10px 24px rgba(10, 132, 255, 0.25);
+}
+.first-bat-card.p2-accent .fb-cta {
+  background: linear-gradient(135deg, #0a84ff, #38bdf8);
+  color: #fff;
+}
+.lg-team-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}

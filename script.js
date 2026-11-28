@@ -1019,14 +1019,18 @@ function refreshPublicHubFeed() {
         }
     });
 
-    database.ref('public_finished_matches').limitToLast(25).once('value', function(snap) {
+    database.ref('public_finished_matches').limitToLast(35).once('value', function(snap) {
         var val = snap.val();
         publicFinishedMatches = [];
         if (val) {
             Object.keys(val).forEach(function(k) {
                 var m = val[k];
-                if (m && m.teamA && m.teamB && m.teamA !== 'undefined') publicFinishedMatches.push(m);
-                else { try { database.ref('public_finished_matches/' + k).remove(); } catch (e) {} }
+                if (m && m.teamA && m.teamB && m.teamA !== 'undefined') {
+                    m._firebaseKey = k;
+                    publicFinishedMatches.push(m);
+                } else {
+                    try { database.ref('public_finished_matches/' + k).remove(); } catch (e) {}
+                }
             });
             publicFinishedMatches.reverse();
         }
@@ -1966,8 +1970,10 @@ function finishFullMatch() {
     var inn2History = overByOver.slice(); if (currOver.length > 0) inn2History.push(overRuns);
     var inn2WktHist = overWickets.slice(); if (currOver.length > 0) inn2WktHist.push(overWktsCount);
 
+    var recId = 'm_' + Date.now();
+    var ownerUid = getCurrentMatchOwnerUid();
     var record = {
-        id: 'm_' + Date.now(), date: new Date().toLocaleDateString(), finishedAt: Date.now(), mode: matchMode, privacy: liveBroadcastPrivacy,
+        id: recId, matchId: recId, ownerUid: ownerUid, date: new Date().toLocaleDateString(), finishedAt: Date.now(), mode: matchMode, privacy: liveBroadcastPrivacy,
         teamA: teamAName, teamB: teamBName, maxOvers: maxOvers,
         inn1Score: innings1.runs + '/' + innings1.wickets + ' (' + innings1.overs + ')',
         inn2Score: inn2Runs + '/' + wicketsDown + ' (' + inn2OversStr + ')',
@@ -2103,7 +2109,9 @@ function finishFFAMatch() {
     matchActive = false;
     clearActiveMatchAutoSave();
     var winner = sorted[0] ? sorted[0].name + (isSuperOver ? ' Won FFA Super Over' : ' Won (Solo FFA)') : 'Completed';
-    var rec = { id: 'm_' + Date.now(), date: new Date().toLocaleDateString(), finishedAt: Date.now(), mode: 'ffa', privacy: liveBroadcastPrivacy, maxOvers: maxOvers, teamA: 'Solo Free-For-All', teamB: sorted.length + ' Players', inn1Score: 'Top: ' + (sorted[0] ? sorted[0].runs : 0) + ' runs', inn2Score: '', winner: winner, ffaData: JSON.parse(JSON.stringify(sorted)) };
+    var ffaRecId = 'm_' + Date.now();
+    var ffaOwnerUid = getCurrentMatchOwnerUid();
+    var rec = { id: ffaRecId, matchId: ffaRecId, ownerUid: ffaOwnerUid, date: new Date().toLocaleDateString(), finishedAt: Date.now(), mode: 'ffa', privacy: liveBroadcastPrivacy, maxOvers: maxOvers, teamA: 'Solo Free-For-All', teamB: sorted.length + ' Players', inn1Score: 'Top: ' + (sorted[0] ? sorted[0].runs : 0) + ' runs', inn2Score: '', winner: winner, ffaData: JSON.parse(JSON.stringify(sorted)) };
     rec.mvp = computeMatchMVP(rec);
     matchHistory.unshift(rec); totalAllTimeMatches++;
     applyMatchCareerDelta(rec, 1);
@@ -2280,7 +2288,13 @@ function updateMatchUI() {
 
     document.getElementById('overText').textContent = oversStr;
     document.getElementById('maxOverText').textContent = maxOvers === 999 ? '∞' : maxOvers;
-    document.getElementById('wicketText').textContent = wicketsDown;
+    var wktBadge = document.getElementById('wicketsOrTurnBadge');
+    if (matchMode === 'ffa' && wktBadge) {
+        var ffaOutCnt = ffaPlayers.filter(function(p) { return p.out; }).length;
+        wktBadge.innerHTML = 'PLAYERS OUT: <b id="wicketText" style="color:#ff2d55">' + ffaOutCnt + '/' + ffaPlayers.length + '</b>';
+    } else if (wktBadge) {
+        wktBadge.innerHTML = 'WICKETS: <b id="wicketText" style="color:#ff2d55">' + wicketsDown + '</b>';
+    }
     document.getElementById('extrasCounterBadge').textContent = 'EXTRAS: ' + (widesCount + noBallsCount) + ' (WD:' + widesCount + ' | NB:' + noBallsCount + ')';
     document.getElementById('freeHitBadge').style.display = isFreeHit ? 'inline-block' : 'none';
 
@@ -2307,7 +2321,8 @@ function updateMatchUI() {
         var b1Col = getReadableThemeColor(b1.theme || '#f5c542');
         document.getElementById('batterName').textContent = b1.name + ' *';
         document.getElementById('batterName').style.color = b1Col;
-        document.getElementById('batterStats').textContent = b1.runs + '(' + b1.balls + ') • 4s:' + b1.fours + ' 6s:' + b1.sixes;
+        var b1Sr = b1.balls > 0 ? ((b1.runs / b1.balls) * 100).toFixed(1) : '0.0';
+        document.getElementById('batterStats').textContent = b1.runs + '(' + b1.balls + ') • SR:' + b1Sr + ' • 4s:' + b1.fours + ' 6s:' + b1.sixes;
         var av1 = document.getElementById('photoAvatar');
         av1.style.borderColor = b1Col;
         av1.innerHTML = b1.avatar ? '<img src="' + b1.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : b1.name.substring(0, 2).toUpperCase();
@@ -2318,7 +2333,8 @@ function updateMatchUI() {
         var b2 = battingTeam[nonStriker];
         nsRow.style.display = 'flex'; lastManBadge.style.display = 'none';
         document.getElementById('nsName').textContent = b2.name;
-        document.getElementById('nsStats').textContent = b2.runs + '(' + b2.balls + ')';
+        var b2Sr = b2.balls > 0 ? ((b2.runs / b2.balls) * 100).toFixed(0) : '0';
+        document.getElementById('nsStats').textContent = b2.runs + '(' + b2.balls + ') • SR:' + b2Sr;
         document.getElementById('photoAvatarNS').innerHTML = b2.avatar ? '<img src="' + b2.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : b2.name.substring(0, 2).toUpperCase();
     } else {
         nsRow.style.display = 'none'; lastManBadge.style.display = 'inline-block';
@@ -2330,7 +2346,8 @@ function updateMatchUI() {
         var bwCol = getReadableThemeColor(bw.theme || '#4285f4');
         document.getElementById('bowlerName').textContent = bw.name;
         document.getElementById('bowlerName').style.color = bwCol;
-        document.getElementById('bowlerStats').textContent = bw.wicketsTaken + '-' + bw.runsConceded + ' (' + formatOvers(bw.ballsBowled) + ' ov)';
+        var bwEcon = bw.ballsBowled > 0 ? ((bw.runsConceded / bw.ballsBowled) * 6).toFixed(2) : '0.00';
+        document.getElementById('bowlerStats').textContent = bw.wicketsTaken + '-' + bw.runsConceded + ' (' + formatOvers(bw.ballsBowled) + ' ov) • ECON:' + bwEcon;
         var avBw = document.getElementById('bowlerAvatar');
         avBw.style.borderColor = bwCol;
         avBw.innerHTML = bw.avatar ? '<img src="' + bw.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : bw.name.substring(0, 2).toUpperCase();
@@ -2471,9 +2488,31 @@ function renderPausedMatches() {
 function renderMatchHistory() {
     var list = document.getElementById('matchHistoryList'), empty = document.getElementById('noMatches');
     if (!list) return;
-    if (!matchHistory.length) { list.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+    if (!matchHistory.length) {
+        list.innerHTML = '';
+        if (empty) { empty.style.display = 'block'; empty.textContent = 'No clashes played yet'; }
+        return;
+    }
+    var searchInp = document.getElementById('archiveSearchInput');
+    var modeSel = document.getElementById('archiveModeFilter');
+    var q = (searchInp ? searchInp.value : '').toLowerCase().trim();
+    var modeF = modeSel ? modeSel.value : 'all';
+
+    var filtered = matchHistory.map(function(m, idx) { return { m: m, idx: idx }; }).filter(function(item) {
+        var m = item.m;
+        var okMode = (modeF === 'all') || ((m.mode || '1v1') === modeF);
+        var okQ = !q || (m.teamA || '').toLowerCase().includes(q) || (m.teamB || '').toLowerCase().includes(q) || (m.winner || '').toLowerCase().includes(q) || (m.mvp && (m.mvp.name || '').toLowerCase().includes(q));
+        return okMode && okQ;
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = '';
+        if (empty) { empty.style.display = 'block'; empty.textContent = 'No matching clashes found'; }
+        return;
+    }
     if (empty) empty.style.display = 'none';
-    list.innerHTML = matchHistory.map(function(m, idx) {
+    list.innerHTML = filtered.map(function(item) {
+        var m = item.m, idx = item.idx;
         var mvp = m.mvp || computeMatchMVP(m);
         return '<div style="margin-top:8px;padding:10px;background:var(--pill-bg);border-radius:14px;border:1px solid var(--border)">' +
             '<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:11px">' + m.teamA + ' vs ' + m.teamB + '</b><span style="font-size:8px;color:var(--muted)">' + m.date + '</span></div>' +
@@ -2496,15 +2535,55 @@ function clearHistory() {
     });
 }
 
+function getCurrentMatchOwnerUid() {
+    if (currentGmailUser) return 'user_' + currentGmailUser.toLowerCase().replace(/[.@#$\[\]]/g, '_');
+    if (auth && auth.currentUser && auth.currentUser.uid) return 'auth_' + auth.currentUser.uid;
+    var dUid = localStorage.getItem('cc_device_uid');
+    if (!dUid) {
+        dUid = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
+        localStorage.setItem('cc_device_uid', dUid);
+    }
+    return dUid;
+}
+
+function removeMatchFromPublicHubHistory(rec) {
+    if (!database || !rec) return;
+    var myUid = getCurrentMatchOwnerUid();
+    database.ref('public_finished_matches').once('value', function(snap) {
+        var val = snap.val();
+        if (!val) return;
+        Object.keys(val).forEach(function(k) {
+            var item = val[k];
+            if (!item) return;
+            var sameId = Boolean(rec.id && (item.id === rec.id || item.matchId === rec.id));
+            var sameOwnerAndMatch = Boolean(
+                item.ownerUid && myUid && item.ownerUid === myUid &&
+                item.teamA === rec.teamA && item.teamB === rec.teamB &&
+                (item.finishedAt && rec.finishedAt ? item.finishedAt === rec.finishedAt : item.inn1Score === rec.inn1Score)
+            );
+            var sameExactFallback = Boolean(
+                !item.ownerUid &&
+                item.teamA === rec.teamA && item.teamB === rec.teamB &&
+                item.inn1Score === rec.inn1Score && item.winner === rec.winner
+            );
+            if (sameId || sameOwnerAndMatch || sameExactFallback) {
+                try { database.ref('public_finished_matches/' + k).remove(); } catch (e) {}
+            }
+        });
+        setTimeout(function() { refreshPublicHubFeed(); }, 250);
+    });
+}
+
 function deleteSingleMatchFromHistory(idx) {
     var m = matchHistory[idx];
     if (!m) return;
     openCustomConfirm('🗑️', 'DELETE MATCH?', 'Delete "' + m.teamA + ' vs ' + m.teamB + '" and deduct its stats from career records?', 'DELETE', function() {
-        matchHistory.splice(idx, 1);
-        applyMatchCareerDelta(m, -1);
+        var removedRec = matchHistory.splice(idx, 1)[0];
+        applyMatchCareerDelta(removedRec, -1);
         totalAllTimeMatches = Math.max(0, totalAllTimeMatches - 1);
+        removeMatchFromPublicHubHistory(removedRec);
         saveAll(); renderMatchHistory(); renderProfiles(); refreshHomeUI();
-        showToast('🗑️ Match deleted & career stats updated');
+        showToast('🗑️ Match deleted & removed from Live Hub');
     });
 }
 
@@ -2710,6 +2789,17 @@ function ensureLeagueStructure(lg) {
     }
 }
 
+var draftLeagueTeams = [];
+
+function toggleLeagueModeUI() {
+    var mode = document.getElementById('leagueModeSelect') ? document.getElementById('leagueModeSelect').value : '1v1';
+    var wrap1v1 = document.getElementById('league1v1PickerWrap');
+    var wrapTeam = document.getElementById('leagueTeamBuilderWrap');
+    if (wrap1v1) wrap1v1.style.display = (mode === '1v1') ? 'block' : 'none';
+    if (wrapTeam) wrapTeam.style.display = (mode === 'team') ? 'block' : 'none';
+    if (mode === 'team') renderLeagueTeamSquadPicker();
+}
+
 function toggleLeaguePickCard(idx) {
     var cb = document.getElementById('cb_LG_' + idx), card = document.getElementById('pickCard_LG_' + idx);
     if (!cb || !card) return;
@@ -2720,18 +2810,149 @@ function toggleLeaguePickCard(idx) {
     if (el) el.textContent = document.querySelectorAll('.league-cb:checked').length + ' selected';
 }
 
+function toggleLeagueTeamSquadCard(idx) {
+    var cb = document.getElementById('cb_LGT_' + idx), card = document.getElementById('pickCard_LGT_' + idx);
+    if (!cb || !card) return;
+    var nextState = !card.classList.contains('selected-teamA');
+    cb.checked = nextState; card.classList.toggle('selected-teamA', nextState);
+    playSFX('dot');
+}
+
+function getAssignedDraftPlayerMap() {
+    var map = {};
+    (draftLeagueTeams || []).forEach(function(t) {
+        (t.squad || []).forEach(function(sp) {
+            var k = (sp.id || sp.name || '').toString().toLowerCase();
+            if (k) map[k] = t.name;
+        });
+    });
+    return map;
+}
+
+function renderLeagueTeamSquadPicker() {
+    var box = document.getElementById('leagueTeamSquadChecklist');
+    if (!box) return;
+    if (!players.length) {
+        box.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:var(--muted)">Add players in Players tab first!</div>';
+        return;
+    }
+    var assignedMap = getAssignedDraftPlayerMap();
+    box.innerHTML = '<div style="display:flex;flex-direction:column;gap:5px">' + players.map(function(p, i) {
+        var k = (p.id || p.name || '').toString().toLowerCase();
+        var usedInTeam = assignedMap[k] || '';
+        var tagHtml = usedInTeam
+            ? '<span class="badge dark" style="font-size:7px;color:var(--gold);border-color:rgba(245,197,66,0.35)">IN ' + usedInTeam.toUpperCase() + '</span>'
+            : '<div class="adv-pick-check">✓</div>';
+        return '<div class="adv-pick-card" id="pickCard_LGT_' + i + '" onclick="toggleLeagueTeamSquadCard(' + i + ')" style="' + (usedInTeam ? 'opacity:0.55;border-style:dashed' : '') + '">' +
+            '<input type="checkbox" class="lg-team-sq-cb" id="cb_LGT_' + i + '" value="' + i + '" style="display:none;pointer-events:none">' +
+            '<div style="display:flex;align-items:center;gap:7px">' + getAvatarHTML(p, 26, 9) +
+            '<div style="font-size:10px;font-weight:900;color:#fff">' + p.name + '</div></div>' + tagHtml + '</div>';
+    }).join('') + '</div>';
+    renderDraftLeagueTeamsList();
+}
+
+function addTeamToDraftLeague() {
+    var nameInp = document.getElementById('lgNewTeamName');
+    var colInp = document.getElementById('lgNewTeamColor');
+    var tName = nameInp ? nameInp.value.trim() : '';
+    var tCol = colInp ? colInp.value : '#38bdf8';
+    var pickedIdxs = Array.from(document.querySelectorAll('.lg-team-sq-cb:checked')).map(function(cb) { return parseInt(cb.value); });
+    if (!tName) return showToast('⚠️ Enter team name!');
+    if (draftLeagueTeams.some(function(t) { return t.name.toLowerCase() === tName.toLowerCase(); })) return showToast('⚠️ Team name already added!');
+    if (pickedIdxs.length < 1) return showToast('⚠️ Select at least 1 player for ' + tName);
+
+    var assignedMap = getAssignedDraftPlayerMap();
+    var duplicateNames = [];
+    var squadObjs = [];
+    pickedIdxs.forEach(function(i) {
+        var pl = players[i];
+        if (!pl) return;
+        var k = (pl.id || pl.name || '').toString().toLowerCase();
+        if (assignedMap[k]) {
+            duplicateNames.push(pl.name + ' (' + assignedMap[k] + ')');
+        } else {
+            squadObjs.push(pl);
+        }
+    });
+
+    if (duplicateNames.length) {
+        return showToast('⚠️ Player already in another team: ' + duplicateNames.join(', '));
+    }
+    if (!squadObjs.length) return showToast('⚠️ No valid new players selected!');
+
+    draftLeagueTeams.push({
+        name: tName,
+        color: tCol,
+        squad: squadObjs.map(function(p) { return { id: p.id, name: p.name, avatar: p.avatar || null, theme: p.theme || tCol }; })
+    });
+    if (nameInp) nameInp.value = '';
+    renderLeagueTeamSquadPicker();
+    showToast('🛡️ Added Team: ' + tName + ' (' + squadObjs.length + 'P)');
+}
+
+function removeDraftLeagueTeam(idx) {
+    draftLeagueTeams.splice(idx, 1);
+    renderDraftLeagueTeamsList();
+}
+
+function renderDraftLeagueTeamsList() {
+    var list = document.getElementById('leagueDraftTeamsList');
+    var pill = document.getElementById('leagueTeamCountPill');
+    if (pill) pill.textContent = draftLeagueTeams.length + ' Teams';
+    if (!list) return;
+    if (!draftLeagueTeams.length) {
+        list.innerHTML = '<div style="font-size:9px;color:var(--muted);text-align:center;padding:4px">No teams added yet (Add at least 3 teams)</div>';
+        return;
+    }
+    list.innerHTML = draftLeagueTeams.map(function(t, idx) {
+        var safeCol = getReadableThemeColor(t.color || '#38bdf8');
+        return '<div class="lg-team-chip" style="border-left:3.5px solid ' + safeCol + '">' +
+            '<div><div style="font-size:11px;font-weight:900;color:' + safeCol + '">🛡️ ' + t.name + '</div>' +
+            '<div style="font-size:8px;color:var(--muted)">' + t.squad.map(function(p) { return p.name; }).join(', ') + '</div></div>' +
+            '<button class="btn red" style="padding:4px 7px;font-size:8px" onclick="removeDraftLeagueTeam(' + idx + ')">✕</button></div>';
+    }).join('');
+}
+
 function createLeague() {
     var name = document.getElementById('leagueNameInput').value.trim();
+    var mode = document.getElementById('leagueModeSelect') ? document.getElementById('leagueModeSelect').value : '1v1';
+    if (!name) return showToast('⚠️ Enter tournament name');
+    var resolvedOvers = getResolvedOversValue('leagueOvers', 'customLeagueOversInput');
+    if (!resolvedOvers) return showToast('⚠️ Enter valid overs!');
+
+    if (mode === 'team') {
+        if (draftLeagueTeams.length < 3) return showToast('⚠️ Add at least 3 teams for a Team Tournament!');
+        var teamNames = draftLeagueTeams.map(function(t) { return t.name; });
+        var teamsMap = {};
+        draftLeagueTeams.forEach(function(t) { teamsMap[t.name] = t; });
+        var newTeamLg = {
+            id: 'lg_' + Date.now(),
+            name: name,
+            mode: 'team',
+            overs: resolvedOvers,
+            type: document.getElementById('leagueType').value,
+            players: teamNames,
+            teamsMap: teamsMap,
+            standings: {},
+            fixtures: [],
+            champion: ''
+        };
+        ensureLeagueStructure(newTeamLg);
+        leagues.unshift(newTeamLg);
+        draftLeagueTeams = [];
+        document.getElementById('leagueNameInput').value = '';
+        saveAll(); renderLeagues();
+        showToast('🏆 Team Tournament Created with Schedule & Points Table!');
+        return;
+    }
+
     var picked = Array.from(document.querySelectorAll('.league-cb:checked')).map(function(cb) {
         var idx = parseInt(cb.value);
         return players[idx] ? players[idx].name : null;
     }).filter(Boolean);
-    if (!name) return showToast('⚠️ Enter tournament name');
     if (picked.length < 3) return showToast('⚠️ Pick at least 3 players');
-    var resolvedOvers = getResolvedOversValue('leagueOvers', 'customLeagueOversInput');
-    if (!resolvedOvers) return showToast('⚠️ Enter valid overs!');
 
-    var newLg = { id: 'lg_' + Date.now(), name: name, overs: resolvedOvers, type: document.getElementById('leagueType').value, players: picked, standings: {}, fixtures: [], champion: '' };
+    var newLg = { id: 'lg_' + Date.now(), name: name, mode: '1v1', overs: resolvedOvers, type: document.getElementById('leagueType').value, players: picked, standings: {}, fixtures: [], champion: '' };
     ensureLeagueStructure(newLg);
     leagues.unshift(newLg);
     document.getElementById('leagueNameInput').value = '';
@@ -2747,10 +2968,46 @@ function playLeagueFixture(leagueId, fixtureId) {
     var fx = lg.fixtures.find(function(f) { return f.id === fixtureId; });
     if (!fx || fx.played) return;
 
-    pendingLeagueMatchData = { leagueId: lg.id, fixtureId: fx.id, overs: lg.overs || 2, p1: fx.p1, p2: fx.p2 };
+    var lgMode = lg.mode || '1v1';
+    pendingLeagueMatchData = {
+        leagueId: lg.id,
+        fixtureId: fx.id,
+        mode: lgMode,
+        overs: lg.overs || 2,
+        p1: fx.p1,
+        p2: fx.p2,
+        teamsMap: lg.teamsMap || null
+    };
+
+    var stagePill = document.getElementById('leagueFirstBatStagePill');
+    if (stagePill) stagePill.textContent = (lgMode === 'team' ? '🛡️ TEAM TOURNAMENT • ' : '⚡ 1v1 TOURNAMENT • ') + (fx.stage || 'MATCH').toUpperCase();
     document.getElementById('leagueFirstBatMatchTitle').textContent = fx.p1 + ' vs ' + fx.p2;
-    document.getElementById('leagueFirstBatBtnP1').textContent = '🏏 ' + fx.p1.toUpperCase() + ' BATS FIRST';
-    document.getElementById('leagueFirstBatBtnP2').textContent = '🏏 ' + fx.p2.toUpperCase() + ' BATS FIRST';
+
+    var grid = document.getElementById('leagueFirstBatCardsGrid');
+    if (grid) {
+        function buildCard(sideKey, sideName, isP2) {
+            var avatarHtml = '', metaText = '';
+            if (lgMode === 'team' && lg.teamsMap && lg.teamsMap[sideName]) {
+                var tm = lg.teamsMap[sideName];
+                var col = getReadableThemeColor(tm.color || (isP2 ? '#0a84ff' : '#f5c542'));
+                avatarHtml = '<div class="avatar" style="width:48px;height:48px;font-size:18px;border-color:' + col + ';color:' + col + '">🛡️</div>';
+                metaText = (tm.squad ? tm.squad.length : 0) + ' Players Squad';
+            } else {
+                var plObj = players.find(function(p) { return p.name === sideName; }) || { name: sideName, theme: isP2 ? '#0a84ff' : '#f5c542' };
+                var rad = computePlayerRadarMetrics(plObj);
+                var c = plObj.career || {};
+                avatarHtml = getAvatarHTML(plObj, 48, 16);
+                metaText = 'OVR ' + rad.ovr + ' • ' + (c.runs || 0) + 'R';
+            }
+            return '<div class="first-bat-card ' + (isP2 ? 'p2-accent' : '') + '" onclick="confirmLeagueFirstBatter(\'' + sideKey + '\')">' +
+                avatarHtml +
+                '<div style="font-size:13px;font-weight:900;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + sideName + '</div>' +
+                '<div style="font-size:9px;color:var(--muted);font-weight:800">' + metaText + '</div>' +
+                '<div class="fb-cta">🏏 BAT FIRST</div></div>';
+        }
+        grid.innerHTML = buildCard('p1', fx.p1, false) + buildCard('p2', fx.p2, true);
+    }
+
     document.getElementById('leagueFirstBatModal').classList.add('open');
 }
 
@@ -2766,17 +3023,30 @@ function confirmLeagueFirstBatter(choice) {
     var firstName = (choice === 'p2') ? d.p2 : d.p1;
     var secondName = (choice === 'p2') ? d.p1 : d.p2;
 
-    var p1Obj = players.find(function(p) { return p.name === firstName; }) || { id: 'lgp1', name: firstName, theme: '#f5c542' };
-    var p2Obj = players.find(function(p) { return p.name === secondName; }) || { id: 'lgp2', name: secondName, theme: '#0a84ff' };
-
-    matchMode = '1v1';
     maxOvers = d.overs || 2;
-    teamAName = p1Obj.name;
-    teamBName = p2Obj.name;
-    teamA = [createMatchPlayerObj(p1Obj)];
-    teamB = [createMatchPlayerObj(p2Obj)];
     isSuperOver = false;
     activeLeagueMatchMeta = { leagueId: d.leagueId, fixtureId: d.fixtureId };
+
+    if (d.mode === 'team' && d.teamsMap && d.teamsMap[firstName] && d.teamsMap[secondName]) {
+        var t1 = d.teamsMap[firstName];
+        var t2 = d.teamsMap[secondName];
+        matchMode = 'team';
+        teamWicketRule = 'all_out';
+        teamAName = t1.name;
+        teamBName = t2.name;
+        teamAColor = t1.color || '#4285f4';
+        teamBColor = t2.color || '#ff1744';
+        teamA = (t1.squad || []).map(function(p) { return createMatchPlayerObj(p); });
+        teamB = (t2.squad || []).map(function(p) { return createMatchPlayerObj(p); });
+    } else {
+        var p1Obj = players.find(function(p) { return p.name === firstName; }) || { id: 'lgp1', name: firstName, theme: '#f5c542' };
+        var p2Obj = players.find(function(p) { return p.name === secondName; }) || { id: 'lgp2', name: secondName, theme: '#0a84ff' };
+        matchMode = '1v1';
+        teamAName = p1Obj.name;
+        teamBName = p2Obj.name;
+        teamA = [createMatchPlayerObj(p1Obj)];
+        teamB = [createMatchPlayerObj(p2Obj)];
+    }
 
     document.getElementById('broadcastModePromptModal').classList.add('open');
     showToast('🏏 ' + firstName + ' bats first vs ' + secondName + '!');
@@ -2801,10 +3071,14 @@ function recordLeagueFixtureResult(leagueId, fixtureId, rec) {
     s1.p += 1; s2.p += 1;
 
     var maxQuotaBalls = (lg.overs || 2) * 6;
-    var r1 = rec.inn1Data ? rec.inn1Data.runs : 0;
-    var b1 = rec.inn1Data ? (rec.inn1Data.wickets >= 1 ? maxQuotaBalls : Math.max(1, rec.inn1Data.balls || maxQuotaBalls)) : maxQuotaBalls;
-    var r2 = rec.inn2Data ? rec.inn2Data.runs : 0;
-    var b2 = rec.inn2Data ? (rec.inn2Data.wickets >= 1 && r2 < r1 ? maxQuotaBalls : Math.max(1, rec.inn2Data.balls || maxQuotaBalls)) : maxQuotaBalls;
+    var inn1IsP1 = (rec.teamA === p1);
+    var p1Data = inn1IsP1 ? rec.inn1Data : rec.inn2Data;
+    var p2Data = inn1IsP1 ? rec.inn2Data : rec.inn1Data;
+
+    var r1 = p1Data ? p1Data.runs : 0;
+    var b1 = p1Data ? Math.max(1, p1Data.balls || maxQuotaBalls) : maxQuotaBalls;
+    var r2 = p2Data ? p2Data.runs : 0;
+    var b2 = p2Data ? Math.max(1, p2Data.balls || maxQuotaBalls) : maxQuotaBalls;
 
     s1.runsFor += r1; s1.ballsFor += b1; s1.runsAgainst += r2; s1.ballsAgainst += b2;
     s2.runsFor += r2; s2.ballsFor += b2; s2.runsAgainst += r1; s2.ballsAgainst += b1;
@@ -2853,6 +3127,8 @@ function renderLeagues() {
             }).join('') + '</div>';
         }
     }
+    renderLeagueTeamSquadPicker();
+
     var list = document.getElementById('leaguesList'), empty = document.getElementById('noLeagues'), badge = document.getElementById('leagueCountBadge');
     if (badge) badge.textContent = leagues.length;
     if (!list) return;
@@ -2861,16 +3137,33 @@ function renderLeagues() {
 
     list.innerHTML = leagues.map(function(lg, idx) {
         ensureLeagueStructure(lg);
+        var isTeamLg = (lg.mode === 'team');
         var rankedNames = Object.keys(lg.standings).sort(function(a, b) {
             if (lg.standings[b].pts !== lg.standings[a].pts) return lg.standings[b].pts - lg.standings[a].pts;
             return lg.standings[b].nrr - lg.standings[a].nrr;
+        });
+
+        var topRunsName = '', topRunsVal = 0, topBowlName = '', topBowlVal = 0;
+        rankedNames.forEach(function(pName) {
+            var st = lg.standings[pName] || {};
+            if ((st.runsFor || 0) > topRunsVal) { topRunsVal = st.runsFor || 0; topRunsName = pName; }
+            if (!isTeamLg) {
+                var regPl = players.find(function(x) { return (x.name || '').trim().toLowerCase() === (pName || '').trim().toLowerCase(); });
+                var wVal = (regPl && regPl.career) ? (regPl.career.wickets || 0) : 0;
+                if (wVal > topBowlVal) { topBowlVal = wVal; topBowlName = pName; }
+            } else if (st.p > 0) {
+                var agRate = st.ballsAgainst > 0 ? (st.runsAgainst / st.ballsAgainst) * 6 : 99;
+                if (topBowlName === '' || agRate < topBowlVal) { topBowlVal = agRate; topBowlName = pName; }
+            }
         });
 
         var tableRows = rankedNames.map(function(pName, rIdx) {
             var st = lg.standings[pName];
             var nrrStr = (st.nrr >= 0 ? '+' : '') + (st.nrr || 0).toFixed(2);
             var qBadge = rIdx < 2 ? '<span style="color:var(--gold);font-size:8px;margin-left:3px">★Q</span>' : '';
-            return '<tr><td><b>#' + (rIdx + 1) + ' ' + pName + '</b>' + qBadge + '</td><td>' + st.p + '</td><td>' + st.w + '</td><td>' + st.l + '</td><td style="color:' + (st.nrr >= 0 ? '#00e676' : '#ff4d6d') + ';font-weight:800">' + nrrStr + '</td><td><b style="color:var(--gold)">' + st.pts + '</b></td></tr>';
+            var batIcon = (topRunsVal > 0 && pName === topRunsName) ? ' <span title="Top Scorer" style="font-size:9px">🏏</span>' : '';
+            var bowlIcon = (topBowlName && pName === topBowlName && (isTeamLg ? st.p > 0 : topBowlVal > 0)) ? ' <span title="Best Bowling" style="font-size:9px">🎯</span>' : '';
+            return '<tr><td><b>#' + (rIdx + 1) + ' ' + pName + '</b>' + qBadge + batIcon + bowlIcon + '</td><td>' + st.p + '</td><td>' + st.w + '</td><td>' + st.l + '</td><td style="color:' + (st.nrr >= 0 ? '#00e676' : '#ff4d6d') + ';font-weight:800">' + nrrStr + '</td><td><b style="color:var(--gold)">' + st.pts + '</b></td></tr>';
         }).join('');
 
         var fixturesHtml = (lg.fixtures || []).map(function(fx) {
@@ -2883,19 +3176,43 @@ function renderLeagues() {
                     '<span class="badge dark" style="color:#00e676">✓ DONE</span></div>';
             }
             return '<div style="padding:7px 9px;background:var(--pill-bg);border:1px solid ' + (isFinal ? 'var(--gold)' : 'var(--border)') + ';border-radius:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">' +
-                '<div>' + stageBadge + ' <b style="font-size:11px;margin-left:4px">' + fx.p1 + ' vs ' + fx.p2 + '</b><div style="font-size:8px;color:var(--gold);margin-top:2px">🏏 1st Bat: ' + fx.p1 + ' • 🎯 Bowl: ' + fx.p2 + '</div></div>' +
+                '<div>' + stageBadge + ' <b style="font-size:11px;margin-left:4px">' + fx.p1 + ' vs ' + fx.p2 + '</b></div>' +
                 '<button class="btn gold" style="padding:5px 10px;font-size:9px" onclick="playLeagueFixture(\'' + lg.id + '\',\'' + fx.id + '\')">▶ PLAY</button></div>';
         }).join('');
 
-        var champBanner = lg.champion ? '<div style="background:linear-gradient(135deg,rgba(245,197,66,0.25),rgba(0,230,118,0.2));border:1.5px solid var(--gold);padding:8px;border-radius:12px;text-align:center;margin-bottom:8px;font-weight:900;color:var(--gold)">👑 CHAMPION: ' + lg.champion.toUpperCase() + ' 🏆</div>' : '';
+        var awardsHtml = '';
+        if (lg.champion) {
+            var bestBatName = '-', bestBatRuns = 0, bestBowlName = '-', bestBowlWkts = 0;
+            if (isTeamLg && lg.teamsMap) {
+                Object.keys(lg.teamsMap).forEach(function(tn) {
+                    (lg.teamsMap[tn].squad || []).forEach(function(sp) {
+                        var reg = players.find(function(x) { return matchPlayerIdentity(sp, x); });
+                        var c = (reg && reg.career) ? reg.career : {};
+                        if ((c.runs || 0) > bestBatRuns) { bestBatRuns = c.runs || 0; bestBatName = sp.name; }
+                        if ((c.wickets || 0) > bestBowlWkts) { bestBowlWkts = c.wickets || 0; bestBowlName = sp.name; }
+                    });
+                });
+            } else {
+                (lg.players || []).forEach(function(pn) {
+                    var reg = players.find(function(x) { return (x.name || '').trim().toLowerCase() === (pn || '').trim().toLowerCase(); });
+                    var c = (reg && reg.career) ? reg.career : {};
+                    if ((c.runs || 0) > bestBatRuns) { bestBatRuns = c.runs || 0; bestBatName = pn; }
+                    if ((c.wickets || 0) > bestBowlWkts) { bestBowlWkts = c.wickets || 0; bestBowlName = pn; }
+                });
+            }
+            awardsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">' +
+                '<div class="stat-pill" style="border-color:var(--gold)"><div style="font-size:7px;color:var(--gold);font-weight:900">🏏 GOLDEN BAT</div><div style="font-size:10px;font-weight:900;margin-top:2px">' + bestBatName + ' (' + bestBatRuns + 'R)</div></div>' +
+                '<div class="stat-pill" style="border-color:var(--cyan)"><div style="font-size:7px;color:var(--cyan);font-weight:900">🎯 GOLDEN BALL</div><div style="font-size:10px;font-weight:900;margin-top:2px">' + bestBowlName + ' (' + bestBowlWkts + 'W)</div></div></div>';
+        }
+        var champBanner = lg.champion ? ('<div style="background:linear-gradient(135deg,rgba(245,197,66,0.25),rgba(0,230,118,0.2));border:1.5px solid var(--gold);padding:8px;border-radius:12px;text-align:center;margin-bottom:6px;font-weight:900;color:var(--gold)">👑 CHAMPION: ' + lg.champion.toUpperCase() + ' 🏆</div>' + awardsHtml) : '';
 
-        return '<div class="glass" style="padding:12px;margin-bottom:10px;border:1.5px solid var(--gold)">' +
+        return '<div class="glass" style="padding:12px;margin-bottom:10px;border:1.5px solid ' + (isTeamLg ? 'var(--cyan)' : 'var(--gold)') + '">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-            '<div><div style="font-size:13px;font-weight:900;color:var(--gold)">🏆 ' + lg.name + '</div><div style="font-size:8px;color:var(--muted)">' + lg.players.length + ' Players • ' + lg.overs + ' Overs • Auto NRR Table</div></div>' +
+            '<div><div style="font-size:13px;font-weight:900;color:' + (isTeamLg ? 'var(--cyan)' : 'var(--gold)') + '">' + (isTeamLg ? '🛡️ ' : '🏆 ') + lg.name + '</div><div style="font-size:8px;color:var(--muted)">' + lg.players.length + (isTeamLg ? ' Teams' : ' Players') + ' • ' + lg.overs + ' Overs • Auto NRR Table</div></div>' +
             '<button class="btn red" style="padding:4px 8px;font-size:8px" onclick="deleteLeagueByIdx(' + idx + ')">🗑️</button></div>' +
             champBanner +
             '<div style="font-size:9px;font-weight:900;color:var(--cyan);margin-bottom:4px">📊 POINTS TABLE (WITH NRR)</div>' +
-            '<table class="pro-score-table" style="margin-bottom:10px"><thead><tr><th>PLAYER</th><th>P</th><th>W</th><th>L</th><th>NRR</th><th>PTS</th></tr></thead><tbody>' + tableRows + '</tbody></table>' +
+            '<table class="pro-score-table" style="margin-bottom:10px"><thead><tr><th>' + (isTeamLg ? 'TEAM' : 'PLAYER') + '</th><th>P</th><th>W</th><th>L</th><th>NRR</th><th>PTS</th></tr></thead><tbody>' + tableRows + '</tbody></table>' +
             '<div style="font-size:9px;font-weight:900;color:var(--gold);margin-bottom:5px">⚔️ TOURNAMENT FIXTURES</div>' +
             '<div style="max-height:195px;overflow-y:auto">' + fixturesHtml + '</div></div>';
     }).join('');
@@ -3091,6 +3408,8 @@ function pushLiveRoomUpdate(isPaused) {
         database.ref('live_rooms/' + hostRoomCode).set({
             roomCode: hostRoomCode,
             privacy: liveBroadcastPrivacy,
+            matchMode: matchMode,
+            isSuperOver: !!isSuperOver,
             ended: false,
             aborted: false,
             paused: !!isPaused,
@@ -3165,7 +3484,7 @@ function openFullSpectatorScreen(code, strictMode) {
         }).join('');
 
         document.getElementById('tvSpecLiveBody').innerHTML =
-            '<div class="jumbotron"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--gold);font-weight:900">' + r.teamA + ' vs ' + r.teamB + '</span>' +
+            '<div class="jumbotron"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--gold);font-weight:900">' + (r.isSuperOver ? '⚡ SUPER OVER • ' : '') + r.teamA + ' vs ' + r.teamB + '</span>' +
             (r.paused ? '<span class="badge gold">⏸️ PAUSED</span>' : '<span class="badge dark" style="color:#00e676;border-color:#00e676">● LIVE</span>') + '</div>' +
             '<div style="font-size:12px;color:#aaa;margin-top:6px">' + (r.battingTeam || r.teamA) + ' BATTING</div>' +
             '<div class="jumbo-score">' + (r.score || '0/0') + '</div>' +
@@ -3479,6 +3798,56 @@ function deleteCloudDataOnly() {
             showToast('⚠️ Failed to delete cloud data');
         });
     });
+}
+
+
+/* ================== OFFLINE JSON FILE BACKUP & RESTORE ================== */
+function exportLocalJsonBackup() {
+    var payload = {
+        app: 'CRIC_CLASH',
+        version: 'v7',
+        exportedAt: new Date().toISOString(),
+        players: players,
+        matchHistory: matchHistory,
+        leagues: leagues,
+        totalAllTimeMatches: totalAllTimeMatches,
+        settings: settings
+    };
+    try {
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        var dateTag = new Date().toISOString().split('T')[0];
+        a.href = URL.createObjectURL(blob);
+        a.download = 'cric-clash-backup-' + dateTag + '.json';
+        a.click();
+        showToast('📥 JSON Backup Downloaded!');
+    } catch (e) {
+        showToast('⚠️ Export failed');
+    }
+}
+
+function importLocalJsonBackup(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var parsed = JSON.parse(e.target.result);
+            if (!parsed || typeof parsed !== 'object' || (!parsed.players && !parsed.matchHistory && !parsed.history)) {
+                return showToast('⚠️ Invalid CRIC CLASH JSON backup file');
+            }
+            if (parsed.settings && typeof parsed.settings === 'object') {
+                settings = Object.assign(settings, parsed.settings);
+                saveSettings();
+                setAppTheme(settings.appTheme || 'oled');
+            }
+            applyRestoredPayload(parsed, false);
+        } catch (err) {
+            showToast('⚠️ Could not read JSON file');
+        }
+        input.value = '';
+    };
+    reader.readAsText(file);
 }
 
 function resetAppCompletely() {

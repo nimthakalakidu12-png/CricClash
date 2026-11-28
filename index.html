@@ -176,11 +176,11 @@
       <input type="text" id="teamSquadSearchInput" class="liquid-search-input" placeholder="🔍 Search player..." oninput="filterSetupPlayerCards('team', this.value)" style="margin-bottom:8px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div id="teamASetupCard" style="background:rgba(66,133,244,0.08);border:1.5px solid #4285f4;padding:9px;border-radius:16px">
-          <div style="display:flex;gap:4px;margin-bottom:6px;align-items:center">
-            <input type="text" id="setupTeamAName" placeholder="Team 1" value="Team A" style="border-color:#4285f4;color:#4285f4;font-weight:900;padding:6px">
+          <div class="team-header-grid">
+            <input type="text" id="setupTeamAName" placeholder="Team 1" value="Team A" style="border-color:#4285f4;color:#4285f4;font-weight:900">
             <input type="color" id="teamAColorPicker" value="#4285f4" style="width:26px;height:26px;padding:0;border:none;background:transparent;cursor:pointer" onchange="updateTeamSetupAura('A',this.value)">
+            <button class="btn light" style="padding:5px;width:28px;height:28px" onclick="document.getElementById('teamALogoFile').click()" title="Team A Logo">🛡️</button>
             <input type="file" id="teamALogoFile" accept="image/*" style="display:none" onchange="previewTeamLogo('A',this)">
-            <button class="btn light" style="padding:5px" onclick="document.getElementById('teamALogoFile').click()">🛡️</button>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <label style="font-size:8px;font-weight:900;color:var(--muted)">BAT SQUAD</label>
@@ -189,11 +189,11 @@
           <div class="multi-select-list" id="teamAList" style="border-color:#4285f4;max-height:155px;margin-bottom:0"></div>
         </div>
         <div id="teamBSetupCard" style="background:rgba(255,23,68,0.08);border:1.5px solid #ff1744;padding:9px;border-radius:16px">
-          <div style="display:flex;gap:4px;margin-bottom:6px;align-items:center">
-            <input type="text" id="setupTeamBName" placeholder="Team 2" value="Team B" style="border-color:#ff1744;color:#ff1744;font-weight:900;padding:6px">
+          <div class="team-header-grid">
+            <input type="text" id="setupTeamBName" placeholder="Team 2" value="Team B" style="border-color:#ff1744;color:#ff1744;font-weight:900">
             <input type="color" id="teamBColorPicker" value="#ff1744" style="width:26px;height:26px;padding:0;border:none;background:transparent;cursor:pointer" onchange="updateTeamSetupAura('B',this.value)">
+            <button class="btn light" style="padding:5px;width:28px;height:28px" onclick="document.getElementById('teamBLogoFile').click()" title="Team B Logo">🛡️</button>
             <input type="file" id="teamBLogoFile" accept="image/*" style="display:none" onchange="previewTeamLogo('B',this)">
-            <button class="btn light" style="padding:5px" onclick="document.getElementById('teamBLogoFile').click()">🛡️</button>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <label style="font-size:8px;font-weight:900;color:var(--muted)">BOWL SQUAD</label>
@@ -224,6 +224,15 @@
     <div style="display:flex;justify-content:space-between;align-items:center">
       <h3 style="margin:0;font-size:11px">📜 Match Archive & Resume</h3>
       <button class="btn light" style="padding:4px 8px;font-size:9px" onclick="clearHistory()">Clear All</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:6px;margin-top:8px">
+      <input type="text" id="archiveSearchInput" placeholder="🔍 Search player or team..." oninput="renderMatchHistory()" style="padding:7px 9px;font-size:10px">
+      <select id="archiveModeFilter" onchange="renderMatchHistory()" style="padding:7px 8px;font-size:10px">
+        <option value="all">All Modes</option>
+        <option value="1v1">⚡ 1v1</option>
+        <option value="team">🛡️ Team</option>
+        <option value="ffa">👑 FFA</option>
+      </select>
     </div>
     <div id="pausedMatchesContainer"></div>
     <div id="matchHistoryList"></div>
@@ -334,7 +343,6 @@
       <div style="display:flex;gap:4px;align-items:center">
         <span id="partnershipBadge" style="font-size:8px;background:var(--pill-bg);padding:2px 7px;border-radius:99px;border:1px solid var(--border);font-weight:800">Stand: 0(0)</span>
         <button id="strikeRotateBtn" class="btn light" style="padding:3px 7px;font-size:8px" onclick="switchStrikeBtn()">⚡ STRIKE</button>
-        <button id="quickSwapBtn" class="btn light" style="padding:3px 7px;font-size:8px;display:none" onclick="quickSwapRoles()">🔄 ROLES</button>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -430,11 +438,18 @@
 <div id="leaguePage" class="page">
   <div class="glass"><h2 style="margin:0;font-size:14px">🏆 Pro League & Points Table</h2></div>
   <div class="glass" style="border:2px solid var(--gold);padding:14px">
-    <input type="text" id="leagueNameInput" placeholder="🏏 Enter tournament name (e.g. Lankans Premier League)" style="margin-bottom:12px;padding:12px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <div style="background:var(--pill-bg);padding:10px;border-radius:10px;border:1px solid var(--border)">
+    <input type="text" id="leagueNameInput" placeholder="🏏 Enter tournament name (e.g. Lankans Premier League)" style="margin-bottom:10px;padding:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px">
+      <div style="background:var(--pill-bg);padding:8px;border-radius:10px;border:1px solid var(--border)">
+        <label style="font-size:8px;font-weight:900;color:var(--gold)">MODE</label>
+        <select id="leagueModeSelect" onchange="toggleLeagueModeUI()" style="padding:7px 6px;font-size:10px;margin-top:3px">
+          <option value="1v1" selected>⚡ 1v1 Solo</option>
+          <option value="team">🛡️ Teams</option>
+        </select>
+      </div>
+      <div style="background:var(--pill-bg);padding:8px;border-radius:10px;border:1px solid var(--border)">
         <label style="font-size:8px;font-weight:900;color:var(--muted)">OVERS</label>
-        <select id="leagueOvers" onchange="toggleCustomOversInput('leagueOvers', 'customLeagueOversInput')">
+        <select id="leagueOvers" onchange="toggleCustomOversInput('leagueOvers', 'customLeagueOversInput')" style="padding:7px 6px;font-size:10px;margin-top:3px">
           <option value="1">1 Over</option>
           <option value="2" selected>2 Overs</option>
           <option value="5">5 Overs</option>
@@ -442,20 +457,39 @@
           <option value="20">20 Overs</option>
           <option value="custom">⚙️ Custom</option>
         </select>
-        <input type="number" id="customLeagueOversInput" placeholder="Custom Overs" style="display:none;margin-top:5px;border-color:var(--gold)">
+        <input type="number" id="customLeagueOversInput" placeholder="Overs" style="display:none;margin-top:5px;border-color:var(--gold);padding:6px">
       </div>
-      <div style="background:var(--pill-bg);padding:10px;border-radius:10px;border:1px solid var(--border)">
+      <div style="background:var(--pill-bg);padding:8px;border-radius:10px;border:1px solid var(--border)">
         <label style="font-size:8px;font-weight:900;color:var(--muted)">FORMAT</label>
-        <select id="leagueType"><option value="round" selected>Round Robin + Final</option><option value="knockout">Knockout</option></select>
+        <select id="leagueType" style="padding:7px 6px;font-size:10px;margin-top:3px"><option value="round" selected>League + Final</option><option value="knockout">Knockout</option></select>
       </div>
     </div>
-    <div style="background:var(--pill-bg);padding:10px;border-radius:16px;border:1px dashed var(--border);margin-bottom:10px">
+
+    <!-- 1v1 Player Picker -->
+    <div id="league1v1PickerWrap" style="background:var(--pill-bg);padding:10px;border-radius:16px;border:1px dashed var(--border);margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-size:10px;font-weight:900">👥 TAP PLAYERS (Min 3)</div>
         <span id="leagueSelectedCount" style="font-size:9px;background:var(--gold);color:#111;font-weight:900;padding:3px 8px;border-radius:99px">0 selected</span>
       </div>
       <div id="leaguePlayerChecklist" style="max-height:170px;overflow:auto"></div>
     </div>
+
+    <!-- Team vs Team Tournament Builder -->
+    <div id="leagueTeamBuilderWrap" style="display:none;background:var(--pill-bg);padding:10px;border-radius:16px;border:1px dashed var(--cyan);margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:900;color:var(--cyan)">🛡️ BUILD TOURNAMENT TEAMS (Min 3 Teams)</div>
+        <span id="leagueTeamCountPill" class="badge gold" style="font-size:8px">0 Teams</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 30px auto;gap:6px;align-items:center;margin-bottom:8px">
+        <input type="text" id="lgNewTeamName" placeholder="Team Name (e.g. Royal Strikers)" style="padding:8px;font-size:10px">
+        <input type="color" id="lgNewTeamColor" value="#38bdf8" style="width:28px;height:28px;padding:0;border:none;background:transparent;cursor:pointer">
+        <button class="btn gold" style="padding:8px 10px;font-size:9px" onclick="addTeamToDraftLeague()">+ ADD TEAM</button>
+      </div>
+      <div style="font-size:8px;color:var(--muted);font-weight:800;margin-bottom:5px">SELECT SQUAD PLAYERS FOR THIS TEAM:</div>
+      <div id="leagueTeamSquadChecklist" style="max-height:130px;overflow:auto;margin-bottom:8px"></div>
+      <div id="leagueDraftTeamsList"></div>
+    </div>
+
     <button class="btn gold" style="width:100%;padding:14px;font-size:12px" onclick="createLeague()">+ CREATE TOURNAMENT 🚀</button>
   </div>
 
@@ -599,6 +633,17 @@
     </div>
   </div>
 
+  <!-- LOCAL JSON FILE BACKUP & RESTORE -->
+  <div class="glass" style="border:1.5px solid var(--cyan);padding:14px">
+    <div style="font-size:11px;font-weight:900;color:var(--cyan);margin-bottom:6px">📦 OFFLINE JSON BACKUP (NO LOGIN NEEDED)</div>
+    <div style="font-size:9px;color:var(--muted);margin-bottom:10px">Export all Players, Match History, Tournaments & Badges as a single .json file, or restore from a saved file anytime.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn gold uniform-btn" onclick="exportLocalJsonBackup()">📥 EXPORT JSON</button>
+      <button class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="document.getElementById('jsonBackupFileInput').click()">📤 IMPORT JSON</button>
+    </div>
+    <input type="file" id="jsonBackupFileInput" accept=".json,application/json" style="display:none" onchange="importLocalJsonBackup(this)">
+  </div>
+
   <div class="glass" style="border:2px solid #ff3b30;padding:14px">
     <div style="font-size:11px;font-weight:900;color:#ff3b30;margin-bottom:6px">⚠️ RESET APPLICATION</div>
     <button class="btn red" style="width:100%;padding:11px" onclick="resetAppCompletely()">🗑️ RESET LOCAL APP TO DEFAULT</button>
@@ -618,15 +663,12 @@
 
 <!-- MODALS -->
 <div id="leagueFirstBatModal" class="modal" onclick="closeLeagueFirstBatModal()">
-  <div class="modal-content holo-card" style="padding:18px;padding-top:44px;text-align:center" onclick="event.stopPropagation()">
+  <div class="modal-content holo-card" style="padding:18px;padding-top:42px;text-align:center" onclick="event.stopPropagation()">
     <button class="close-x" onclick="closeLeagueFirstBatModal()">✕</button>
-    <div style="font-size:30px;margin-bottom:4px">🏏</div>
-    <div style="font-size:9px;font-weight:900;color:var(--gold);letter-spacing:1px">SELECT FIRST BATTER</div>
-    <div id="leagueFirstBatMatchTitle" style="font-size:16px;font-weight:900;color:#fff;margin:4px 0 14px">Player 1 vs Player 2</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="leagueFirstBatBtnP1" class="btn gold uniform-btn" onclick="confirmLeagueFirstBatter('p1')">🏏 PLAYER 1 BATS FIRST</button>
-      <button id="leagueFirstBatBtnP2" class="btn dark uniform-btn" style="border-color:var(--cyan);color:var(--cyan)" onclick="confirmLeagueFirstBatter('p2')">🏏 PLAYER 2 BATS FIRST</button>
-    </div>
+    <span id="leagueFirstBatStagePill" class="badge gold" style="font-size:8px;letter-spacing:1px;padding:3px 10px">TOURNAMENT CLASH</span>
+    <div id="leagueFirstBatMatchTitle" style="font-size:17px;font-family:'Space Grotesk',sans-serif;font-weight:900;color:#fff;margin:6px 0 3px">Player 1 vs Player 2</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:14px">Tap the side that will bat first in this match</div>
+    <div id="leagueFirstBatCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
   </div>
 </div>
 
